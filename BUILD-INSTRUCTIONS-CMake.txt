@@ -1,0 +1,75 @@
+PRELIMINARIES
+
+Here are instructions for building Moses on Windows using Visual C++ and 
+CMake, using CMake on Linux/MacOS is also similar.
+
+Moses requires gcc/vc++, Boost >= 1.36, and zlib including the headers that some
+distributions package separately (i.e. -dev or -devel packages).  Source is
+available at http://boost.org. 
+
+For Windows, please don't use a installed Boost, instead, use a Staged Boost.
+
+There are several optional dependencies:
+
+GIZA++ does not compile on Linux, use 0.7.0 version of MGIZA++ instead. Source
+is here:
+
+http://sourceforge.net/projects/mgizapp/
+
+Only KenLM compiles for Windows.
+
+KenLM is included with Moses.  
+
+--------------------------------------------------------------------------
+
+ADVICE ON INSTALLING EXTERNAL LIBRARIES
+
+Generally, for trouble installing external libraries, you should get support
+directly from the library maker:
+
+Boost: http://www.boost.org/doc/libs/1_48_0/more/
+ZLIB: http://zlib.net
+
+ZLIB also uses CMake.
+
+You should also install CMake for Windows.
+
+--------------------------------------------------------------------------
+
+BUILDING
+
+First you should compile (stage) BOOST and set the environment variable
+
+set BOOST_ROOT=%WHERE_YOU_STAGE_BOOST%
+
+Also, compile ZLIB using cmake.
+
+Run the following command:
+
+mkdir BUILD
+cd BUILD
+cmakd .. 
+cmake ..\ -DZLIB_LIBRARY=%WHERE_YOU_COMPILE_ZLIB%\Release\zlib.lib -DZLIB_INCLUDE_DIR=%WHERE_YOU_COMPILE_ZLIB%
+
+Then you can build using Visual Studio GUI by run:
+
+start mosesdecoder.sln
+
+Or directly build:
+
+msbuild /p:Configuration=Release mosesdecoder.sln
+
+--------------------------------------------------------------------------
+
+ALTERNATIVE WAYS TO BUILD ON Windows OTHER PLATFORMS
+
+Microsoft Windows
+-----------------
+Moses is primarily targeted at gcc on UNIX.  Windows users should consult
+http://ssli.ee.washington.edu/people/amittai/Moses-on-Win7.pdf .  
+
+Binaries for all external libraries needed can be downloaded from 
+	http://www.statmt.org/moses/?n=Moses.LibrariesUsed
+
+Only the decoder is developed and tested under Windows. There are difficulties
+using the training scripts under Windows, even with Cygwin.
