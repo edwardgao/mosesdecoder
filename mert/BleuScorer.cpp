@@ -192,7 +192,11 @@ float BleuScorer::calculateScore(const vector<int>& comps) const
     if (comps[2*i] == 0) {
       return 0.0;
     }
+#ifdef WIN32
+	logbleu += log((double)comps[2*i]) - log((double)comps[2*i+1]);
+#else
     logbleu += log(comps[2*i]) - log(comps[2*i+1]);
+#endif
 
   }
   logbleu /= kLENGTH;

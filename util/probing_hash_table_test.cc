@@ -27,7 +27,11 @@ struct Entry {
 typedef ProbingHashTable<Entry, boost::hash<unsigned char> > Table;
 
 BOOST_AUTO_TEST_CASE(simple) {
+#ifdef WIN32
+  char* mem = new char[Table::Size(10, 1.2)];
+#else
   char mem[Table::Size(10, 1.2)];
+#endif
   memset(mem, 0, sizeof(mem));
 
   Table table(mem, sizeof(mem));
@@ -41,6 +45,9 @@ BOOST_AUTO_TEST_CASE(simple) {
   BOOST_CHECK_EQUAL(3, i->GetKey());
   BOOST_CHECK_EQUAL(static_cast<uint64_t>(328920), i->GetValue());
   BOOST_CHECK(!table.Find(2, i));
+#ifdef WIN32
+  delete[] mem;
+#endif
 }
 
 } // namespace

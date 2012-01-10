@@ -54,7 +54,14 @@ int terCalc::WERCalculation ( size_t * ref, size_t * hyp )
   int retour;
   int REFSize = sizeof ( ref ) + 1;
   int HYPSize = sizeof ( hyp ) + 1;
+
+#ifdef WIN32
+  int **WER= new int*[REFSize];
+  for(int _i = 0; _i < REFSize ; _i++)
+	  WER[_i] = new int[HYPSize];
+#else
   int WER[REFSize][HYPSize];
+#endif
   int i = 0;
   int j = 0;
   for ( i = 0; i < REFSize; i++ ) {
@@ -94,6 +101,11 @@ int terCalc::WERCalculation ( size_t * ref, size_t * hyp )
   cerr << endl;
   retour = WER[i-1][j-1];
   cerr << "i : " << i - 1 << "\tj : " << j - 1 << endl;
+#ifdef WIN32
+  for(int _i = 0; _i < REFSize ; _i++)
+	  delete[] WER[_i];
+  delete[] WER;
+#endif
   return retour;
 }
 int terCalc::WERCalculation ( std::vector< int > ref, std::vector< int > hyp )
@@ -155,8 +167,19 @@ int terCalc::WERCalculation ( vector<string> ref, vector<string> hyp )
   int retour;
   int REFSize = ( int ) ref.size() + 1;
   int HYPSize = ( int ) hyp.size() + 1;
+
+#ifdef WIN32
+  int **WER= new int*[REFSize];
+  for(int _i = 0; _i < REFSize ; _i++)
+	  WER[_i] = new int[HYPSize];
+
+  char **WERchar= new char*[REFSize];
+  for(int _i = 0; _i < REFSize ; _i++)
+	  WERchar[_i] = new char[HYPSize];
+#else
   int WER[REFSize][HYPSize];
   char WERchar[REFSize][HYPSize];
+#endif
   int i = 0;
   int j = 0;
   for ( i = 0; i < REFSize; i++ ) {
@@ -198,9 +221,9 @@ int terCalc::WERCalculation ( vector<string> ref, vector<string> hyp )
       }
     }
   }
-  cerr << endl;
+  std::cerr << endl;
   retour = WER[REFSize-1][HYPSize-1];
-  cerr << "i : " << i - 1 << "\tj : " << j - 1 << endl;
+  std::cerr << "i : " << i - 1 << "\tj : " << j - 1 << endl;
   j = HYPSize - 1;
   i = REFSize - 1;
   int k;
@@ -213,8 +236,8 @@ int terCalc::WERCalculation ( vector<string> ref, vector<string> hyp )
   }
   WERalignment local;
   while ( j > 0 && i > 0 ) {
-    cerr << "indice i : " << i << "\t";
-    cerr << "indice j : " << j << endl;
+    std::cerr << "indice i : " << i << "\t";
+    std::cerr << "indice j : " << j << endl;
     if ( ( j == HYPSize - 1 ) && ( i == REFSize - 1 ) ) {
       alignmentElement localInfos;
       s << WER[i][j];
@@ -268,19 +291,19 @@ int terCalc::WERCalculation ( vector<string> ref, vector<string> hyp )
 
   for ( j = 1; j < HYPSize; j++ ) {
     for ( i = 1; i < REFSize; i++ ) {
-      cerr << WERchar[i][j] << " ";
+      std::cerr << WERchar[i][j] << " ";
     }
-    cerr << endl;
+    std::cerr << endl;
   }
-  cerr << endl;
+  std::cerr << endl;
   for ( j = 1; j < HYPSize; j++ ) {
     for ( i = 1; i < REFSize; i++ ) {
-      cerr << WER[i][j] << " ";
+      std::cerr << WER[i][j] << " ";
     }
-    cerr << endl;
+    std::cerr << endl;
   }
 
-  cerr << "=================" << endl;
+  std::cerr << "=================" << endl;
 // 		k=local.size()-1;
 // 		while (k>0)
 // 		{
@@ -316,7 +339,7 @@ int terCalc::WERCalculation ( vector<string> ref, vector<string> hyp )
 // 			cerr << (string)localInfos.at(1)+"\t";
     k--;
   }
-  cerr << endl;
+  std::cerr << endl;
   /*		k=local.size()-1;
   		while (k>0)
   		{
@@ -333,7 +356,7 @@ int terCalc::WERCalculation ( vector<string> ref, vector<string> hyp )
   while ( k < ( int ) l_WERalignment.size() ) {
     alignmentElement localInfos;
     localInfos = l_WERalignment.at ( k );
-    cerr << localInfos.at ( 0 ) << "\t" << localInfos.at ( 1 ) << "\t" << localInfos.at ( 2 ) << "\t" << localInfos.at ( 3 ) << endl;
+    std::cerr << localInfos.at ( 0 ) << "\t" << localInfos.at ( 1 ) << "\t" << localInfos.at ( 2 ) << "\t" << localInfos.at ( 3 ) << endl;
     /*			if ((int)(localInfos.at(1).compare("I"))==0)
     			{
     				cerr << "***\t";
@@ -349,7 +372,7 @@ int terCalc::WERCalculation ( vector<string> ref, vector<string> hyp )
     			*/
     k++;
   }
-  cerr << endl;
+  std::cerr << endl;
   /*		k=local.size()-1;
   		l=0;
   		while (k>0)
@@ -369,7 +392,15 @@ int terCalc::WERCalculation ( vector<string> ref, vector<string> hyp )
   			k--;
   		}
   		cerr<<endl;*/
-  cerr << "=================" << endl;
+  std::cerr << "=================" << endl;
+#ifdef WIN32
+  for(int _i = 0; _i < REFSize ; _i++)
+	  delete[] WER[_i];
+  delete[] WER;
+  for(int _i = 0; _i < REFSize ; _i++)
+	  delete[] WERchar[_i];
+  delete[] WERchar;
+#endif
   return retour;
 }
 
@@ -405,7 +436,12 @@ hashMapInfos terCalc::BuildWordMatches ( vector<string> hyp, vector<string> ref 
   for ( int i = 0; i < ( int ) hyp.size(); i++ ) {
     tempHash.addHasher ( hyp.at ( i ), "" );
   }
+
+#ifdef WIN32
+  bool *cor = new bool[ref.size() ];
+#else
   bool cor[ref.size() ];
+#endif
   for ( int i = 0; i < ( int ) ref.size(); i++ ) {
     if ( tempHash.trouve ( ( string ) ref.at ( i ) ) ) {
       cor[i] = true;
@@ -638,9 +674,15 @@ bestShiftStruct terCalc::CalcBestShift ( vector<string> cur, vector<string> hyp,
 {
   bestShiftStruct to_return;
   bool anygain = false;
+#ifdef WIN32
+  bool *herr = new bool[ ( int ) hyp.size() ];
+  bool *rerr = new bool[ ( int ) ref.size() ];
+  int *ralign = new int[ ( int ) ref.size() ];
+#else
   bool herr[ ( int ) hyp.size() ];
   bool rerr[ ( int ) ref.size() ];
   int ralign[ ( int ) ref.size() ];
+#endif
   FindAlignErr ( med_align, herr, rerr, ralign );
   vector<vecTerShift> poss_shifts;
   poss_shifts = GatherAllPossShifts ( cur, ref, rloc, med_align, herr, rerr, ralign );
@@ -725,6 +767,12 @@ bestShiftStruct terCalc::CalcBestShift ( vector<string> cur, vector<string> hyp,
   } else {
     to_return.m_empty = true;
   }
+
+#ifdef WIN32
+  delete[] herr;
+  delete[] rerr;
+  delete[] ralign;
+#endif
   return to_return;
 }
 

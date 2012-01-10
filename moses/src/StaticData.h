@@ -184,7 +184,13 @@ protected:
   //FIXME: Single lock for cache not most efficient. However using a
   //reader-writer for LRU cache is tricky - how to record last used time?
 #ifdef WITH_THREADS
+
+#ifdef WIN32
+  boost::mutex* m_transOptCacheMutex;
+#else
   mutable boost::mutex m_transOptCacheMutex;
+#endif
+
 #endif
   bool m_isAlwaysCreateDirectTranslationOption;
   //! constructor. only the 1 static variable can be created

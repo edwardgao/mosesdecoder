@@ -8,7 +8,14 @@
 #include <string>
 #include <vector>
 
+#ifdef WIN32
+#include <vccomp/getopt.h>
+#include <string>
+#define strtof stof
+#define srandom srand
+#else
 #include <getopt.h>
+#endif
 
 #include "Data.h"
 #include "Scorer.h"

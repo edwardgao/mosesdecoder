@@ -85,6 +85,11 @@ StaticData::StaticData()
   ,m_lmEnableOOVFeature(false)
   ,m_isAlwaysCreateDirectTranslationOption(false)
 {
+#ifdef WIN32
+#ifdef WITH_THREADS
+  m_transOptCacheMutex = new boost::mutex();
+#endif
+#endif
   m_maxFactorIdx[0] = 0;  // source side
   m_maxFactorIdx[1] = 0;  // target side
 
@@ -647,6 +652,11 @@ StaticData::~StaticData()
   // memory pools
   Phrase::FinalizeMemPool();
 
+#ifdef WIN32
+ #ifdef WITH_THREADS
+  delete m_transOptCacheMutex;
+#endif
+#endif
 }
 
 #ifdef HAVE_SYNLM
@@ -1277,7 +1287,13 @@ const TranslationOptionList* StaticData::FindTransOptListInCache(const DecodeGra
 {
   std::pair<size_t, Phrase> key(decodeGraph.GetPosition(), sourcePhrase);
 #ifdef WITH_THREADS
+
+#ifdef WIN32
+  boost::mutex::scoped_lock lock(*m_transOptCacheMutex);
+#else
   boost::mutex::scoped_lock lock(m_transOptCacheMutex);
+#endif
+
 #endif
   std::map<std::pair<size_t, Phrase>, std::pair<TranslationOptionList*,clock_t> >::iterator iter
   = m_transOptCache.find(key);
@@ -1322,7 +1338,13 @@ void StaticData::AddTransOptListToCache(const DecodeGraph &decodeGraph, const Ph
   std::pair<size_t, Phrase> key(decodeGraph.GetPosition(), sourcePhrase);
   TranslationOptionList* storedTransOptList = new TranslationOptionList(transOptList);
 #ifdef WITH_THREADS
+
+#ifdef WIN32
+  boost::mutex::scoped_lock lock(*m_transOptCacheMutex);
+#else
   boost::mutex::scoped_lock lock(m_transOptCacheMutex);
+#endif
+
 #endif
   m_transOptCache[key] = make_pair( storedTransOptList, clock() );
   ReduceTransOptCache();

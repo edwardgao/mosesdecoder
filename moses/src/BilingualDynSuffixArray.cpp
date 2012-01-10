@@ -461,7 +461,11 @@ void BilingualDynSuffixArray::addSntPair(string& source, string& target, string&
   Phrase sphrase(ARRAY_SIZE_INCR);
   sphrase.CreateFromString(m_inputFactors, source, factorDelimiter);
   m_srcVocab->MakeOpen();
+#ifdef WIN32
+  wordID_t *sIDs = new wordID_t[sphrase.GetSize()];
+#else
   wordID_t sIDs[sphrase.GetSize()];
+#endif
   // store words in vocabulary and corpus
   for(int i = sphrase.GetSize()-1; i >= 0; --i) {
     sIDs[i] = m_srcVocab->GetWordID(sphrase.GetWord(i));  // get vocab id backwards
@@ -476,7 +480,11 @@ void BilingualDynSuffixArray::addSntPair(string& source, string& target, string&
   Phrase tphrase(ARRAY_SIZE_INCR);
   tphrase.CreateFromString(m_outputFactors, target, factorDelimiter);
   m_trgVocab->MakeOpen();
+#ifdef WIN32
+  wordID_t *tIDs = new wordID_t[tphrase.GetSize()];
+#else
   wordID_t tIDs[tphrase.GetSize()];
+#endif
   for(int i = tphrase.GetSize()-1; i >= 0; --i) {
     tIDs[i] = m_trgVocab->GetWordID(tphrase.GetWord(i));  // get vocab id
   }
@@ -495,7 +503,10 @@ void BilingualDynSuffixArray::addSntPair(string& source, string& target, string&
   m_trgVocab->MakeClosed();
   //for(size_t i=0; i < sphrase.GetSize(); ++i)
     //ClearWordInCache(sIDs[i]);
-  
+#ifdef WIN32
+  delete[] sIDs;
+  delete[] tIDs;
+#endif
 }
 void BilingualDynSuffixArray::ClearWordInCache(wordID_t srcWord) {
   if(m_freqWordsCached.find(srcWord) != m_freqWordsCached.end())

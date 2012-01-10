@@ -1,3 +1,25 @@
+#ifdef WIN32
+#include "LM/Remote.h"
+// DUMMY CLASS, NO SUPPORT
+namespace Moses
+{
+	bool LanguageModelRemote::Load(const std::string &filePath
+		, FactorType factorType
+		, size_t nGramOrder){	return false;}
+
+	bool LanguageModelRemote::start(const std::string& host, int port){	return false;}
+
+	LMResult LanguageModelRemote::GetValue(const std::vector<const Word*> &contextFactor, State* finalState) const
+	{
+		return LMResult();
+	}
+
+	LanguageModelRemote::~LanguageModelRemote()	{
+	}
+
+}
+
+#else
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -142,3 +164,4 @@ LanguageModelRemote::~LanguageModelRemote()
 }
 
 }
+#endif

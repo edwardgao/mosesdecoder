@@ -3,7 +3,15 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#ifdef WIN32
+#include <vccomp/getopt.h>
+#include <string>
+#define strtof stof
+#define srandom srand
+#define random rand
+#else
 #include <getopt.h>
+#endif
 #include <math.h>
 
 #include "Scorer.h"

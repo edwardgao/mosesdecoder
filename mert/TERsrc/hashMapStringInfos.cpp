@@ -1,5 +1,7 @@
 #include "hashMapStringInfos.h"
-
+#ifdef WIN32
+#include <boost/functional/hash.hpp>
+#endif
 // The following class defines a hash function for strings
 
 
@@ -55,11 +57,14 @@ int hashMapStringInfos::trouve ( string key )
 */
 long hashMapStringInfos::hashValue ( string key )
 {
+#ifdef WIN32
+	boost::hash<string> hasher;
+	return hasher ( key );
+#else
   locale loc;                 // the "C" locale
   const collate<char>& coll = use_facet<collate<char> > ( loc );
   return coll.hash ( key.data(), key.data() + key.length() );
-// 	boost::hash<string> hasher;
-// 	return hasher ( key );
+#endif
 }
 /**
 * void hashMapStringInfos::addHasher ( string key, string value )

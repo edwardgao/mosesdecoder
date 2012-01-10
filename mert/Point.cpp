@@ -4,6 +4,14 @@
 #include <cstdlib>
 #include "util/check.hh"
 #include <limits>
+
+#ifdef WIN32
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#endif
+
 #include "FeatureStats.h"
 
 using namespace std;
@@ -53,8 +61,13 @@ void Point::Randomize()
   CHECK(m_min.size()==Point::dim);
   CHECK(m_max.size()==Point::dim);
   for (unsigned int i=0; i<size(); i++) {
+#ifdef WIN32
+	operator[](i) = m_min[i] +
+		  (float)rand()/(float)RAND_MAX * (float)(m_max[i]-m_min[i]);
+#else
     operator[](i) = m_min[i] +
                    (float)random()/(float)RAND_MAX * (float)(m_max[i]-m_min[i]);
+#endif
   }
 }
 

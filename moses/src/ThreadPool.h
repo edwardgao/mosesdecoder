@@ -103,6 +103,7 @@ private:
 };
 
 
+
 class TestTask : public Task
 {
 public:
@@ -111,7 +112,11 @@ public:
 #ifdef BOOST_HAS_PTHREADS
     pthread_t tid = pthread_self();
 #else
+#ifdef WIN32
+    size_t tid =0;
+#else
     pthread_t tid = 0;
+#endif
 #endif
     std::cerr << "Executing " << m_id << " in thread id " << tid << std::endl;
   }

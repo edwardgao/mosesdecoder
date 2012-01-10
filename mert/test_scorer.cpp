@@ -5,6 +5,8 @@
 #include "Data.h"
 #include "Scorer.h"
 #include "ScorerFactory.h"
+#include "BleuScorer.h"
+#include "PerScorer.h"
 
 using namespace std;
 

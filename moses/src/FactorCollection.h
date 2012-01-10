@@ -27,6 +27,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 
 #ifdef WITH_THREADS
+#include <boost/thread/mutex.hpp>
+#endif
+
+#ifdef WITH_THREADS
 #include <boost/thread/shared_mutex.hpp>
 #endif
 

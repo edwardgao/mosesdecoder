@@ -12,6 +12,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef WIN32
+#define popen _popen
+#define pclose _pclose
+#include <io.h>
+#define dup _dup
+#endif
+
 namespace util {
 namespace {
 

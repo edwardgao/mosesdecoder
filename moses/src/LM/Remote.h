@@ -1,6 +1,30 @@
 #ifndef moses_LanguageModelRemote_h
 #define moses_LanguageModelRemote_h
 
+#ifdef WIN32
+
+#include "LM/SingleFactor.h"
+#include "TypeDef.h"
+#include "Factor.h"
+namespace Moses
+{
+
+	class LanguageModelRemote : public LanguageModelPointerState
+	{
+	private:
+		
+		bool start(const std::string& host, int port);
+	public:
+		~LanguageModelRemote();
+		virtual LMResult GetValue(const std::vector<const Word*> &contextFactor, State* finalState = 0) const;
+		bool Load(const std::string &filePath
+			, FactorType factorType
+			, size_t nGramOrder);
+	};
+
+}
+
+#else
 #include "LM/SingleFactor.h"
 #include "TypeDef.h"
 #include "Factor.h"
@@ -42,4 +66,5 @@ public:
 };
 
 }
+#endif
 #endif

@@ -2,7 +2,9 @@
 
 // The following class defines a hash function for strings
 
-
+#ifdef WIN32
+#include <boost/functional/hash.hpp>
+#endif
 using namespace std;
 
 namespace HashMapSpace
@@ -55,8 +57,13 @@ int hashMapInfos::trouve ( string key )
 long hashMapInfos::hashValue ( string key )
 {
   locale loc;                 // the "C" locale
+#ifdef WIN32
+  boost::hash<string> hasher;
+  return hasher ( key );
+#else
   const collate<char>& coll = use_facet<collate<char> >(loc);
   return coll.hash(key.data(),key.data()+key.length());
+#endif
 // 	boost::hash<string> hasher;
 //         return hasher ( key );
 }

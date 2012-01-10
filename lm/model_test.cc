@@ -33,6 +33,26 @@ const char *TestNoUnkLocation() {
 
 }
 
+#ifdef WIN32
+#define StartTest(word, ngram, score, indep_left) \
+	ret = model.FullScore( \
+	state, \
+	model.GetVocabulary().Index(word), \
+	out);\
+	BOOST_CHECK_CLOSE(score, ret.prob, 0.001); \
+	BOOST_CHECK_EQUAL(static_cast<unsigned int>(ngram), ret.ngram_length); \
+	BOOST_CHECK_GE(std::min<unsigned char>(ngram, 5 - 1), out.length); \
+	BOOST_CHECK_EQUAL(indep_left, ret.independent_left); \
+{\
+	WordIndex *context = new WordIndex[state.length + 1]; \
+	context[0] = model.GetVocabulary().Index(word); \
+	std::copy(state.words, state.words + state.length, context + 1); \
+	State get_state; \
+	model.GetState(context, context + state.length + 1, get_state); \
+	BOOST_CHECK_EQUAL(out, get_state); \
+	delete[] context; \
+}
+#else
 #define StartTest(word, ngram, score, indep_left) \
   ret = model.FullScore( \
       state, \
@@ -50,7 +70,7 @@ const char *TestNoUnkLocation() {
     model.GetState(context, context + state.length + 1, get_state); \
     BOOST_CHECK_EQUAL(out, get_state); \
   }
-
+#endif
 #define AppendTest(word, ngram, score, indep_left) \
   StartTest(word, ngram, score, indep_left) \
   state = out;

@@ -3,14 +3,23 @@
 */
 
 #include <limits>
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <cmath>
 #include <ctime>
 
+#ifdef WIN32
+#include <vccomp/getopt.h>
+#include <string>
+#define strtof stof
+#define srandom srand
+#else
 #include <getopt.h>
+#endif
 
 #include "Data.h"
 #include "Point.h"

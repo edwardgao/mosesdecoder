@@ -24,9 +24,15 @@ namespace {
 inline float intersect(float m1, float b1, float m2, float b2)
 {
   float isect = (b2 - b1) / (m1 - m2);
+#ifdef WIN32
+  if (!_finite(isect)) {
+	  isect = MAX_FLOAT;
+  }
+#else
   if (!isfinite(isect)) {
     isect = MAX_FLOAT;
   }
+#endif
   return isect;
 }
 
@@ -146,7 +152,11 @@ statscore_t Optimizer::LineOptimize(const Point& origin, const Point& direction,
     // Now we look for the intersections points indicating a change of 1 best.
     // We use the fact that the function is convex, which means that the gradient can only go up.
     while (gradientit != gradient.end()) {
-      map<float,unsigned>::iterator leftmost = gradientit;
+#ifdef WIN32
+      multimap<float,unsigned>::iterator leftmost = gradientit;
+#else
+	  map<float,unsigned>::iterator leftmost = gradientit;
+#endif
       float m = gradientit->first;
       float b = f0[gradientit->second];
       multimap<float,unsigned>::iterator gradientit2 = gradientit;

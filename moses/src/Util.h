@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #define moses_Util_h
 
 #include <iostream>
+#include "util/check.hh"
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -30,10 +31,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <cmath>
 #include <limits>
 #include <map>
+#include "TypeDef.h"
 #include <cstdlib>
 #include <cstring>
-#include "util/check.hh"
-#include "TypeDef.h"
 
 namespace Moses
 {
