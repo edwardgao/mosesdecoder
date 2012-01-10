@@ -1,0 +1,69 @@
+# Set output directory
+FIND_PACKAGE(ZLIB)
+
+IF(ZLIB_FOUND)
+    INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIRS})
+    INCLUDE_DIRECTORIES(${ZLIB_LIBRARY_DIRS})
+    LINK_DIRECTORIES( ${BZIP2_LIBRARY_DIRS})
+    LINK_DIRECTORIES( ${ZLIB_LIBRARY_DIRS})
+ELSE()
+    MESSAGE(FATAL_ERROR "ZLIB not found" )
+ENDIF (ZLIB_FOUND)
+
+SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+
+INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR} )
+INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/util )
+INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/moses/src )
+INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/lm )
+
+
+#BUILD BINARY
+
+SET( MOSES_SRC Main.cpp mbr.cpp IOWrapper.cpp TranslationAnalysis.cpp LatticeMBR.cpp )
+
+ADD_EXECUTABLE(moses ${MOSES_SRC} )
+
+TARGET_LINK_LIBRARIES (
+    moses
+    moseslib
+    ondiskpt
+    ken
+    util
+    ${ZLIB_LIBRARIES}
+    ${Boost_LIBRARIES}
+    )
+
+#set properties on the libraries
+SET_TARGET_PROPERTIES(moses PROPERTIES
+    VERSION ${MOSES_VERSION}
+    COMPILE_DEFINITIONS_DEBUG _DEBUG
+)
+
+SET( LMBRGRID_SRC LatticeMBRGrid.cpp LatticeMBR.cpp IOWrapper.cpp)
+
+ADD_EXECUTABLE(lmbrgrid ${LMBRGRID_SRC} )
+
+TARGET_LINK_LIBRARIES (
+    lmbrgrid
+    moseslib
+    ondiskpt
+    ken
+    util
+    ${ZLIB_LIBRARIES}
+    ${Boost_LIBRARIES}
+    )
+
+#set properties on the libraries
+SET_TARGET_PROPERTIES(lmbrgrid PROPERTIES
+    VERSION ${MOSES_VERSION}
+    COMPILE_DEFINITIONS_DEBUG _DEBUG
+)
+
+
+INSTALL(TARGETS moses lmbrgrid 
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    )
+
