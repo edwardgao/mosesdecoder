@@ -25,6 +25,7 @@ while(-e "$stem$ref") {
     $ref++;
 }
 &add_to_ref($stem,\@REF) if -e $stem;
+die("ERROR: could not find reference file $stem") unless scalar @REF;
 
 sub add_to_ref {
     my ($file,$REF) = @_;
@@ -49,7 +50,7 @@ while(<STDIN>) {
     foreach my $reference (@{$REF[$s]}) {
 #      print "$s $_ <=> $reference\n";
   $reference = lc($reference) if $lowercase;
-	my @WORD = split(/ /,$reference);
+	my @WORD = split(' ',$reference);
 	my $length = scalar(@WORD);
         my $diff = abs($length_translation_this_sentence-$length);
 	if ($diff < $closest_diff) {

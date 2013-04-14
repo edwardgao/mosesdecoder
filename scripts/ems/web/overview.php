@@ -13,7 +13,7 @@ function setup() {
     print "<TR><TD><A HREF=\"?setup=$dir[0]\">$dir[0]</A></TD><TD>$dir[1]</TD><TD>$dir[2]</TD><TD>$dir[3]</TD></TR>\n";
   }
   print "</TABLE>\n";
-  print "<P>To add experiment, edit setup in web directory";
+  print "<P>To add experiment, edit the file 'setup' in the web directory.";
 }
 
 function overview() {
@@ -134,7 +134,9 @@ function overview() {
   print "var best_score = [];\n";
   reset($evalset);
   while (list($set,$dummy) = each($evalset)) {
-      print "best_score[\"$set\"] = ".$best[$set].";\n";
+      if ($best[$set] != "" && $best[$set]>0) {
+        print "best_score[\"$set\"] = ".$best[$set].";\n";
+      }
   }
 ?>
 

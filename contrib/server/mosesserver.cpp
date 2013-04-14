@@ -1,20 +1,23 @@
 #include "util/check.hh"
 #include <stdexcept>
 #include <iostream>
+#include <vector>
+#include <algorithm>
+
+
+#include "moses/ChartManager.h"
+#include "moses/Hypothesis.h"
+#include "moses/Manager.h"
+#include "moses/StaticData.h"
+#include "moses/TranslationModel/PhraseDictionaryDynSuffixArray.h"
+#include "moses/TranslationSystem.h"
+#include "moses/TreeInput.h"
+#include "moses/LMList.h"
+#include "moses/LM/ORLM.h"
 
 #include <xmlrpc-c/base.hpp>
 #include <xmlrpc-c/registry.hpp>
 #include <xmlrpc-c/server_abyss.hpp>
-
-#include "Hypothesis.h"
-#include "Manager.h"
-#include "StaticData.h"
-#include "PhraseDictionaryDynSuffixArray.h"
-#include "TranslationSystem.h"
-#include "LMList.h"
-#ifdef LM_ORLM
-#  include "LanguageModelORLM.h"
-#endif
 
 using namespace Moses;
 using namespace std;
@@ -53,7 +56,7 @@ public:
     PhraseDictionaryDynSuffixArray* pdsa = (PhraseDictionaryDynSuffixArray*) pdf->GetDictionary();
     cerr << "Inserting into address " << pdsa << endl;
     pdsa->insertSnt(source_, target_, alignment_);
-    if(add2ORLM_) {       
+    if(add2ORLM_) {
       updateORLM();
     }
     cerr << "Done inserting\n";
@@ -67,20 +70,12 @@ public:
   string source_, target_, alignment_;
   bool bounded_, add2ORLM_;
   void updateORLM() {
-#ifdef LM_ORLM
+    // TODO(level101): this belongs in the language model, not in moseserver.cpp
     vector<string> vl;
     map<vector<string>, int> ngSet;
     LMList lms = StaticData::Instance().GetLMList(); // get LM
     LMList::const_iterator lmIter = lms.begin();
-    const LanguageModel* lm = *lmIter; 
-    /* currently assumes a single LM that is a ORLM */
-#ifdef WITH_THREADS
-    boost::shared_ptr<LanguageModelORLM> orlm; 
-    orlm = boost::dynamic_pointer_cast<LanguageModelORLM>(lm->GetLMImplementation()); 
-#else 
-    LanguageModelORLM* orlm; 
-    orlm = (LanguageModelORLM*)lm->GetLMImplementation(); 
-#endif
+    LanguageModelORLM* orlm = static_cast<LanguageModelORLM*>(static_cast<LMRefCount*>(*lmIter)->MosesServerCppShouldNotHaveLMCode());
     if(orlm == 0) {
       cerr << "WARNING: Unable to add target sentence to ORLM\n";
       return;
@@ -90,8 +85,8 @@ public:
     const std::string sBOS = orlm->GetSentenceStart()->GetString();
     const std::string sEOS = orlm->GetSentenceEnd()->GetString();
     Utils::splitToStr(target_, vl, " ");
-    // insert BOS and EOS 
-    vl.insert(vl.begin(), sBOS); 
+    // insert BOS and EOS
+    vl.insert(vl.begin(), sBOS);
     vl.insert(vl.end(), sEOS);
     for(int j=0; j < vl.size(); ++j) {
       int i = (j<ngOrder) ? 0 : j-ngOrder+1;
@@ -113,7 +108,6 @@ public:
           orlm->UpdateORLM(it->first, it->second);
       }
     }
-#endif
   }
   void breakOutParams(const params_t& params) {
     params_t::const_iterator si = params.find("source");
@@ -181,36 +175,48 @@ public:
     }
 
     const TranslationSystem& system = getTranslationSystem(params);
-
-    Sentence sentence;
-    const vector<FactorType> &inputFactorOrder =
-      staticData.GetInputFactorOrder();
-    stringstream in(source + "\n");
-    sentence.Read(in,inputFactorOrder);
-    Manager manager(sentence,staticData.GetSearchAlgorithm(), &system);
-    manager.ProcessSentence();
-    const Hypothesis* hypo = manager.GetBestHypothesis();
-
-    vector<xmlrpc_c::value> alignInfo;
     stringstream out, graphInfo, transCollOpts;
-    outputHypo(out,hypo,addAlignInfo,alignInfo,reportAllFactors);
-
     map<string, xmlrpc_c::value> retData;
+
+    if (staticData.IsChart()) {
+       TreeInput tinput;
+        const vector<FactorType> &inputFactorOrder =
+          staticData.GetInputFactorOrder();
+        stringstream in(source + "\n");
+        tinput.Read(in,inputFactorOrder);
+        ChartManager manager(tinput, &system);
+        manager.ProcessSentence();
+        const ChartHypothesis *hypo = manager.GetBestHypothesis();
+        outputChartHypo(out,hypo);
+    } else {
+        Sentence sentence;
+        const vector<FactorType> &inputFactorOrder =
+          staticData.GetInputFactorOrder();
+        stringstream in(source + "\n");
+        sentence.Read(in,inputFactorOrder);
+	size_t lineNumber = 0; // TODO: Include sentence request number here?
+        Manager manager(lineNumber, sentence, staticData.GetSearchAlgorithm(), &system);
+        manager.ProcessSentence();
+        const Hypothesis* hypo = manager.GetBestHypothesis();
+
+        vector<xmlrpc_c::value> alignInfo;
+        outputHypo(out,hypo,addAlignInfo,alignInfo,reportAllFactors);
+        if (addAlignInfo) {
+          retData.insert(pair<string, xmlrpc_c::value>("align", xmlrpc_c::value_array(alignInfo)));
+        }
+
+        if(addGraphInfo) {
+          insertGraphInfo(manager,retData);
+            (const_cast<StaticData&>(staticData)).SetOutputSearchGraph(false);
+        }
+        if (addTopts) {
+          insertTranslationOptions(manager,retData);
+        }
+    }
     pair<string, xmlrpc_c::value>
     text("text", xmlrpc_c::value_string(out.str()));
-    cerr << "Output: " << out.str() << endl;
-    if (addAlignInfo) {
-      retData.insert(pair<string, xmlrpc_c::value>("align", xmlrpc_c::value_array(alignInfo)));
-    }
     retData.insert(text);
-
-    if(addGraphInfo) {
-      insertGraphInfo(manager,retData);
-      (const_cast<StaticData&>(staticData)).SetOutputSearchGraph(false);
-    }
-    if (addTopts) {
-      insertTranslationOptions(manager,retData);
-    }
+    cerr << "Output: " << out.str() << endl;
     *retvalP = xmlrpc_c::value_struct(retData);
   }
 
@@ -241,10 +247,31 @@ public:
     }
   }
 
+  void outputChartHypo(ostream& out, const ChartHypothesis* hypo) {
+    Phrase outPhrase(20);
+    hypo->CreateOutputPhrase(outPhrase);
+
+    // delete 1st & last
+    assert(outPhrase.GetSize() >= 2);
+    outPhrase.RemoveWord(0);
+    outPhrase.RemoveWord(outPhrase.GetSize() - 1);
+    for (size_t pos = 0 ; pos < outPhrase.GetSize() ; pos++) {
+      const Factor *factor = outPhrase.GetFactor(pos, 0);
+      out << *factor << " ";
+    }
+
+  }
+
+
+  bool compareSearchGraphNode(const SearchGraphNode& a, const SearchGraphNode b) {
+    return a.hypo->GetId() < b.hypo->GetId();
+  }
+
   void insertGraphInfo(Manager& manager, map<string, xmlrpc_c::value>& retData) {
     vector<xmlrpc_c::value> searchGraphXml;
     vector<SearchGraphNode> searchGraph;
     manager.GetSearchGraph(searchGraph);
+    std::sort(searchGraph.begin(), searchGraph.end());
     for (vector<SearchGraphNode>::const_iterator i = searchGraph.begin(); i != searchGraph.end(); ++i) {
       map<string, xmlrpc_c::value> searchGraphXmlNode;
       searchGraphXmlNode["forward"] = xmlrpc_c::value_double(i->forward);
@@ -290,7 +317,7 @@ public:
           toptXml["start"] =  xmlrpc_c::value_int(startPos);
           toptXml["end"] =  xmlrpc_c::value_int(endPos);
           vector<xmlrpc_c::value> scoresXml;
-          ScoreComponentCollection scores = topt->GetScoreBreakdown();
+          const std::valarray<FValue> &scores = topt->GetScoreBreakdown().getCoreFeatures();
           for (size_t j = 0; j < scores.size(); ++j) {
             scoresXml.push_back(xmlrpc_c::value_double(scores[j]));
           }
@@ -349,7 +376,7 @@ int main(int argc, char** argv)
     params->Explain();
     exit(1);
   }
-  if (!StaticData::LoadDataStatic(params)) {
+  if (!StaticData::LoadDataStatic(params, argv[0])) {
     exit(1);
   }
 

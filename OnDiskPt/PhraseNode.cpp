@@ -22,7 +22,7 @@
 #include "OnDiskWrapper.h"
 #include "TargetPhraseCollection.h"
 #include "SourcePhrase.h"
-#include "../moses/src/Util.h"
+#include "moses/Util.h"
 
 using namespace std;
 
@@ -38,10 +38,10 @@ size_t PhraseNode::GetNodeSize(size_t numChildren, size_t wordSize, size_t count
 }
 
 PhraseNode::PhraseNode()
-  :m_currChild(NULL)
+  : m_value(0) 
+  ,m_currChild(NULL)
   ,m_saved(false)
   ,m_memLoad(NULL)
-  ,m_value(0)
 {
 }
 
@@ -55,20 +55,20 @@ PhraseNode::PhraseNode(UINT64 filePos, OnDiskWrapper &onDiskWrapper)
 
   std::fstream &file = onDiskWrapper.GetFileSource();
   file.seekg(filePos);
-  CHECK(filePos == file.tellg());
+  CHECK(filePos == (UINT64)file.tellg());
 
   file.read((char*) &m_numChildrenLoad, sizeof(UINT64));
-
+  
   size_t memAlloc = GetNodeSize(m_numChildrenLoad, onDiskWrapper.GetSourceWordSize(), countSize);
   m_memLoad = (char*) malloc(memAlloc);
 
   // go to start of node again
   file.seekg(filePos);
-  CHECK(filePos == file.tellg());
+  CHECK(filePos == (UINT64)file.tellg());
 
   // read everything into memory
   file.read(m_memLoad, memAlloc);
-  CHECK(filePos + memAlloc == file.tellg());
+  CHECK(filePos + memAlloc == (UINT64)file.tellg());
 
   // get value
   m_value = ((UINT64*)m_memLoad)[1];
@@ -160,15 +160,15 @@ void PhraseNode::Save(OnDiskWrapper &onDiskWrapper, size_t pos, size_t tableLimi
 
 void PhraseNode::AddTargetPhrase(const SourcePhrase &sourcePhrase, TargetPhrase *targetPhrase
                                  , OnDiskWrapper &onDiskWrapper, size_t tableLimit
-                                 , const std::vector<float> &counts)
+                                 , const std::vector<float> &counts, OnDiskPt::PhrasePtr spShort)
 {
-  AddTargetPhrase(0, sourcePhrase, targetPhrase, onDiskWrapper, tableLimit, counts);
+  AddTargetPhrase(0, sourcePhrase, targetPhrase, onDiskWrapper, tableLimit, counts, spShort);
 }
 
 void PhraseNode::AddTargetPhrase(size_t pos, const SourcePhrase &sourcePhrase
                                  , TargetPhrase *targetPhrase, OnDiskWrapper &onDiskWrapper
-                                 , size_t tableLimit, const std::vector<float> &counts)
-{
+                                 , size_t tableLimit, const std::vector<float> &counts, OnDiskPt::PhrasePtr spShort)
+{	
   size_t phraseSize = sourcePhrase.GetSize();
   if (pos < phraseSize) {
     const Word &word = sourcePhrase.GetWord(pos);
@@ -185,10 +185,12 @@ void PhraseNode::AddTargetPhrase(size_t pos, const SourcePhrase &sourcePhrase
       m_currChild = &node;
     }
 
-    node.AddTargetPhrase(pos + 1, sourcePhrase, targetPhrase, onDiskWrapper, tableLimit, counts);
+    // keep searching for target phrase node.. 
+    node.AddTargetPhrase(pos + 1, sourcePhrase, targetPhrase, onDiskWrapper, tableLimit, counts, spShort);
   } else {
     // drilled down to the right node
     m_counts = counts;
+    targetPhrase->SetSourcePhrase(spShort);
     m_targetPhraseColl.AddTargetPhrase(targetPhrase);
   }
 }
@@ -226,20 +228,19 @@ void PhraseNode::GetChild(Word &wordFound, UINT64 &childFilePos, size_t ind, OnD
 
   size_t wordSize = onDiskWrapper.GetSourceWordSize();
   size_t childSize = wordSize + sizeof(UINT64);
-  size_t numFactors = onDiskWrapper.GetNumSourceFactors();
 
   char *currMem = m_memLoad
                   + sizeof(UINT64) * 2 // size & file pos of target phrase coll
                   + sizeof(float) * onDiskWrapper.GetNumCounts() // count info
                   + childSize * ind;
 
-  size_t memRead = ReadChild(wordFound, childFilePos, currMem, numFactors);
+  size_t memRead = ReadChild(wordFound, childFilePos, currMem);
   CHECK(memRead == childSize);
 }
 
-size_t PhraseNode::ReadChild(Word &wordFound, UINT64 &childFilePos, const char *mem, size_t numFactors) const
+size_t PhraseNode::ReadChild(Word &wordFound, UINT64 &childFilePos, const char *mem) const
 {
-  size_t memRead = wordFound.ReadFromMemory(mem, numFactors);
+  size_t memRead = wordFound.ReadFromMemory(mem);
 
   const char *currMem = mem + memRead;
   UINT64 *memArray = (UINT64*) (currMem);

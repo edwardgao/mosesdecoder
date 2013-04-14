@@ -20,26 +20,31 @@
  ***********************************************************************/
 #include <vector>
 #include <iostream>
+#include <boost/shared_ptr.hpp>
 #include "Word.h"
 
 namespace OnDiskPt
 {
+class Vocab;
 
+
+/** A contiguous phrase. SourcePhrase & TargetPhrase inherit from this and add the on-disk functionality
+ */
 class Phrase
 {
   friend std::ostream& operator<<(std::ostream&, const Phrase&);
 
 protected:
-  std::vector<Word*>	m_words;
+  std::vector<WordPtr>	m_words;
 
 public:
   Phrase()
   {}
-  Phrase(const Phrase &copy);
-  virtual ~Phrase();
 
-  void AddWord(Word *word);
-  void AddWord(Word *word, size_t pos);
+  virtual ~Phrase() {}
+
+  void AddWord(WordPtr word);
+  void AddWord(WordPtr word, size_t pos);
 
   const Word &GetWord(size_t pos) const {
     return *m_words[pos];
@@ -48,10 +53,14 @@ public:
     return m_words.size();
   }
 
+  virtual void DebugPrint(std::ostream &out, const Vocab &vocab) const;
+
   int Compare(const Phrase &compare) const;
   bool operator<(const Phrase &compare) const;
   bool operator>(const Phrase &compare) const;
   bool operator==(const Phrase &compare) const;
 };
+
+typedef boost::shared_ptr<Phrase> PhrasePtr;
 
 }

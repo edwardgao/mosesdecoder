@@ -22,6 +22,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <boost/shared_ptr.hpp>
 #include "Vocab.h"
 
 namespace Moses
@@ -31,22 +32,26 @@ class Word;
 
 namespace OnDiskPt
 {
+class Vocab;
 
+/* A wrapper around a vocab id, and a boolean indicating whther it is a term or non-term.
+ * Factors can be represented by using a vocab string with | character, eg go|VB
+ */
 class Word
 {
   friend std::ostream& operator<<(std::ostream&, const Word&);
 
-protected:
+private:
   bool m_isNonTerminal;
-  std::vector<UINT64> m_factors;
+  UINT64 m_vocabId;
 
 public:
   explicit Word()
   {}
 
-  explicit Word(size_t numFactors, bool isNonTerminal)
+  explicit Word(bool isNonTerminal)
   :m_isNonTerminal(isNonTerminal)
-  ,m_factors(numFactors)
+  ,m_vocabId(0)
   {}
 
   Word(const Word &copy);
@@ -59,21 +64,30 @@ public:
   }
 
   size_t WriteToMemory(char *mem) const;
-  size_t ReadFromMemory(const char *mem, size_t numFactors);
-  size_t ReadFromFile(std::fstream &file, size_t numFactors);
+  size_t ReadFromMemory(const char *mem);
+  size_t ReadFromFile(std::fstream &file);
 
-  void SetVocabId(size_t ind, UINT32 vocabId) {
-    m_factors[ind] = vocabId;
+  void SetVocabId(UINT32 vocabId) {
+    m_vocabId = vocabId;
   }
 
-  Moses::Word *ConvertToMoses(Moses::FactorDirection direction
-                              , const std::vector<Moses::FactorType> &outputFactorsVec
-                              , const Vocab &vocab) const;
+  void ConvertToMoses(
+    const std::vector<Moses::FactorType> &outputFactorsVec,
+    const Vocab &vocab,
+    Moses::Word &overwrite) const;
+
+  void DebugPrint(std::ostream &out, const Vocab &vocab) const;
+  inline const std::string &GetString(const Vocab &vocab) const
+  {
+    return vocab.GetString(m_vocabId);
+  }
 
   int Compare(const Word &compare) const;
   bool operator<(const Word &compare) const;
   bool operator==(const Word &compare) const;
 
 };
+
+typedef boost::shared_ptr<Word> WordPtr;
 }
 

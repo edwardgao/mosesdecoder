@@ -1,11 +1,11 @@
 #include <iostream>
 #include <string>
 
-#include "Phrase.h"
-#include "FactorCollection.h"
-#include "Timer.h"
-#include "InputFileStream.h"
-#include "LexicalReorderingTable.h"
+#include "moses/Phrase.h"
+#include "moses/FactorCollection.h"
+#include "moses/Timer.h"
+#include "moses/InputFileStream.h"
+#include "moses/LexicalReorderingTable.h"
 
 using namespace Moses;
 
@@ -24,7 +24,7 @@ void printHelp()
 
 std::ostream& operator<<(std::ostream& o, Scores s)
 {
-  for(int i = 0; i < s.size(); ++i) {
+  for(size_t i = 0; i < s.size(); ++i) {
     o << s[i] << "  ";
   }
   //o << std::endln;

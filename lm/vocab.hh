@@ -4,6 +4,7 @@
 #include "lm/enumerate_vocab.hh"
 #include "lm/lm_exception.hh"
 #include "lm/virtual_interface.hh"
+#include "util/pool.hh"
 #include "util/probing_hash_table.hh"
 #include "util/sorted_uniform.hh"
 #include "util/string_piece.hh"
@@ -13,11 +14,11 @@
 #include <vector>
 
 namespace lm {
-class ProbBackoff;
+struct ProbBackoff;
 class EnumerateVocab;
 
 namespace ngram {
-class Config;
+struct Config;
 
 namespace detail {
 uint64_t HashForVocab(const char *str, std::size_t len);
@@ -35,7 +36,7 @@ class WriteWordsWrapper : public EnumerateVocab {
     
     void Add(WordIndex index, const StringPiece &str);
 
-    void Write(int fd);
+    void Write(int fd, uint64_t start);
 
   private:
     EnumerateVocab *inner_;
@@ -62,7 +63,7 @@ class SortedVocabulary : public base::Vocabulary {
     }
 
     // Size for purposes of file writing
-    static size_t Size(std::size_t entries, const Config &config);
+    static uint64_t Size(uint64_t entries, const Config &config);
 
     // Vocab words are [0, Bound())  Only valid after FinishedLoading/LoadedBinary.  
     WordIndex Bound() const { return bound_; }
@@ -82,7 +83,7 @@ class SortedVocabulary : public base::Vocabulary {
 
     bool SawUnk() const { return saw_unk_; }
 
-    void LoadedBinary(int fd, EnumerateVocab *to);
+    void LoadedBinary(bool have_words, int fd, EnumerateVocab *to);
 
   private:
     uint64_t *begin_, *end_;
@@ -96,7 +97,9 @@ class SortedVocabulary : public base::Vocabulary {
     EnumerateVocab *enumerate_;
 
     // Actual strings.  Used only when loading from ARPA and enumerate_ != NULL 
-    std::vector<std::string> strings_to_enumerate_;
+    util::Pool string_backing_;
+
+    std::vector<StringPiece> strings_to_enumerate_;
 };
 
 #pragma pack(push)
@@ -129,7 +132,7 @@ class ProbingVocabulary : public base::Vocabulary {
       return lookup_.Find(detail::HashForVocab(str), i) ? i->value : 0;
     }
 
-    static size_t Size(std::size_t entries, const Config &config);
+    static uint64_t Size(uint64_t entries, const Config &config);
 
     // Vocab words are [0, Bound()).  
     WordIndex Bound() const { return bound_; }
@@ -141,13 +144,19 @@ class ProbingVocabulary : public base::Vocabulary {
 
     WordIndex Insert(const StringPiece &str);
 
-    void FinishedLoading(ProbBackoff *reorder_vocab);
+    template <class Weights> void FinishedLoading(Weights * /*reorder_vocab*/) {
+      InternalFinishedLoading();
+    }
+
+    std::size_t UnkCountChangePadding() const { return 0; }
 
     bool SawUnk() const { return saw_unk_; }
 
-    void LoadedBinary(int fd, EnumerateVocab *to);
+    void LoadedBinary(bool have_words, int fd, EnumerateVocab *to);
 
   private:
+    void InternalFinishedLoading();
+
     typedef util::ProbingHashTable<ProbingVocabuaryEntry, util::IdentityHash> Lookup;
 
     Lookup lookup_;

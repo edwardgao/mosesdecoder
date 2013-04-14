@@ -17,8 +17,8 @@ License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 ***********************************************************************/
 
-#ifndef _SCORE_DATA_ITERATOR_
-#define _SCORE_DATA_ITERATOR_
+#ifndef MERT_SCORE_DATA_ITERATOR_H_
+#define MERT_SCORE_DATA_ITERATOR_H_
 
 /*
  * For loading from the score data file.
@@ -29,10 +29,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "util/file_piece.hh"
 #include "util/string_piece.hh"
 
 #include "FeatureDataIterator.h"
+
+namespace util { class FilePiece; }
+
+namespace MosesTuning
+{
+  
 
 typedef std::vector<float> ScoreDataItem;
 
@@ -44,6 +49,8 @@ class ScoreDataIterator :
   public:
     ScoreDataIterator();
     explicit ScoreDataIterator(const std::string& filename);
+
+    ~ScoreDataIterator();
 
     static ScoreDataIterator end() {
       return ScoreDataIterator();
@@ -62,4 +69,7 @@ class ScoreDataIterator :
     std::vector<ScoreDataItem> m_next;
 };
 
-#endif
+}
+
+
+#endif  // MERT_SCORE_DATA_ITERATOR_H_

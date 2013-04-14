@@ -1,157 +1,178 @@
 #include "Scorer.h"
+
 #include <limits>
+#include "Vocabulary.h"
+#include "Util.h"
+#include "Singleton.h"
+#include "PreProcessFilter.h"
+#include "util/tokenize_piece.hh"
+
+using namespace std;
+
+namespace MosesTuning
+{
+
+namespace {
+// For tokenizing a hypothesis translation, we may encounter unknown tokens which
+// do not exist in the corresponding reference translations.
+const int kUnknownToken = -1;
+} // namespace
 
 Scorer::Scorer(const string& name, const string& config)
-    : _name(name), _scoreData(0), _preserveCase(true) {
+    : m_name(name),
+      m_vocab(mert::VocabularyFactory::GetVocabulary()),
+      m_filter(NULL),
+      m_score_data(NULL),
+      m_enable_preserve_case(true) {
+  InitConfig(config);
+}
+
+Scorer::~Scorer() {
+  Singleton<mert::Vocabulary>::Delete();
+  delete m_filter;
+}
+
+void Scorer::InitConfig(const string& config) {
 //    cerr << "Scorer config string: " << config << endl;
   size_t start = 0;
   while (start < config.size()) {
-    size_t end = config.find(",",start);
+    size_t end = config.find(",", start);
     if (end == string::npos) {
       end = config.size();
     }
-    string nv = config.substr(start,end-start);
+    string nv = config.substr(start, end - start);
     size_t split = nv.find(":");
     if (split == string::npos) {
       throw runtime_error("Missing colon when processing scorer config: " + config);
     }
-    string name = nv.substr(0,split);
-    string value = nv.substr(split+1,nv.size()-split-1);
+    const string name = nv.substr(0, split);
+    const string value = nv.substr(split + 1, nv.size() - split - 1);
     cerr << "name: " << name << " value: " << value << endl;
-    _config[name] = value;
-    start = end+1;
+    m_config[name] = value;
+    start = end + 1;
   }
 }
 
-//regularisation strategies
-static float score_min(const statscores_t& scores, size_t start, size_t end)
-{
-  float min = numeric_limits<float>::max();
-  for (size_t i = start; i < end; ++i) {
-    if (scores[i] < min) {
-      min = scores[i];
-    }
-  }
-  return min;
-}
-
-static float score_average(const statscores_t& scores, size_t start, size_t end)
-{
-  if ((end - start) < 1) {
-    // this shouldn't happen
-    return 0;
-  }
-  float total = 0;
-  for (size_t j = start; j < end; ++j) {
-    total += scores[j];
-  }
-
-  return total / (end - start);
-}
-
-StatisticsBasedScorer::StatisticsBasedScorer(const string& name, const string& config)
-    : Scorer(name,config) {
-  //configure regularisation
-  static string KEY_TYPE = "regtype";
-  static string KEY_WINDOW = "regwin";
-  static string KEY_CASE = "case";
-  static string TYPE_NONE = "none";
-  static string TYPE_AVERAGE = "average";
-  static string TYPE_MINIMUM = "min";
-  static string TRUE = "true";
-  static string FALSE = "false";
-
-  string type = getConfig(KEY_TYPE,TYPE_NONE);
-  if (type == TYPE_NONE) {
-    _regularisationStrategy = REG_NONE;
-  } else if (type == TYPE_AVERAGE) {
-    _regularisationStrategy = REG_AVERAGE;
-  } else if (type == TYPE_MINIMUM) {
-    _regularisationStrategy = REG_MINIMUM;
-  } else {
-    throw runtime_error("Unknown scorer regularisation strategy: " + type);
-  }
-  //    cerr << "Using scorer regularisation strategy: " << type << endl;
-
-  string window = getConfig(KEY_WINDOW,"0");
-  _regularisationWindow = atoi(window.c_str());
-  //    cerr << "Using scorer regularisation window: " << _regularisationWindow << endl;
-
-  string preservecase = getConfig(KEY_CASE,TRUE);
-  if (preservecase == TRUE) {
-    _preserveCase = true;
-  } else if (preservecase == FALSE) {
-    _preserveCase = false;
-  }
-  //    cerr << "Using case preservation: " << _preserveCase << endl;
-}
-
-void  StatisticsBasedScorer::score(const candidates_t& candidates, const diffs_t& diffs,
-                                   statscores_t& scores) const
-{
-  if (!_scoreData) {
-    throw runtime_error("Score data not loaded");
-  }
-  // calculate the score for the candidates
-  if (_scoreData->size() == 0) {
-    throw runtime_error("Score data is empty");
-  }
-  if (candidates.size() == 0) {
-    throw runtime_error("No candidates supplied");
-  }
-  int numCounts = _scoreData->get(0,candidates[0]).size();
-  vector<int> totals(numCounts);
-  for (size_t i = 0; i < candidates.size(); ++i) {
-    ScoreStats stats = _scoreData->get(i,candidates[i]);
-    if (stats.size() != totals.size()) {
-      stringstream msg;
-      msg << "Statistics for (" << "," << candidates[i] << ") have incorrect "
-          << "number of fields. Found: " << stats.size() << " Expected: "
-          << totals.size();
-      throw runtime_error(msg.str());
-    }
-    for (size_t k = 0; k < totals.size(); ++k) {
-      totals[k] += stats.get(k);
-    }
-  }
-  scores.push_back(calculateScore(totals));
-
-  candidates_t last_candidates(candidates);
-  // apply each of the diffs, and get new scores
-  for (size_t i = 0; i < diffs.size(); ++i) {
-    for (size_t j = 0; j < diffs[i].size(); ++j) {
-      size_t sid = diffs[i][j].first;
-      size_t nid = diffs[i][j].second;
-      size_t last_nid = last_candidates[sid];
-      for (size_t k  = 0; k < totals.size(); ++k) {
-        int diff = _scoreData->get(sid,nid).get(k)
-                   - _scoreData->get(sid,last_nid).get(k);
-        totals[k] += diff;
+void Scorer::TokenizeAndEncode(const string& line, vector<int>& encoded) {
+  for (util::TokenIter<util::AnyCharacter, true> it(line, util::AnyCharacter(" "));
+       it; ++it) {
+    if (!m_enable_preserve_case) {
+      string token = it->as_string();
+      for (std::string::iterator sit = token.begin();
+           sit != token.end(); ++sit) {
+        *sit = tolower(*sit);
       }
-      last_candidates[sid] = nid;
-    }
-    scores.push_back(calculateScore(totals));
-  }
-
-  // Regularisation. This can either be none, or the min or average as described in
-  // Cer, Jurafsky and Manning at WMT08.
-  if (_regularisationStrategy == REG_NONE || _regularisationWindow <= 0) {
-    // no regularisation
-    return;
-  }
-
-  // window size specifies the +/- in each direction
-  statscores_t raw_scores(scores);      // copy scores
-  for (size_t i = 0; i < scores.size(); ++i) {
-    size_t start = 0;
-    if (i >= _regularisationWindow) {
-      start = i - _regularisationWindow;
-    }
-    size_t end = min(scores.size(), i + _regularisationWindow+1);
-    if (_regularisationStrategy == REG_AVERAGE) {
-      scores[i] = score_average(raw_scores,start,end);
+      encoded.push_back(m_vocab->Encode(token));
     } else {
-      scores[i] = score_min(raw_scores,start,end);
+      encoded.push_back(m_vocab->Encode(it->as_string()));
     }
   }
+}
+
+void Scorer::TokenizeAndEncodeTesting(const string& line, vector<int>& encoded) {
+  for (util::TokenIter<util::AnyCharacter, true> it(line, util::AnyCharacter(" "));
+       it; ++it) {
+    if (!m_enable_preserve_case) {
+      string token = it->as_string();
+      for (std::string::iterator sit = token.begin();
+           sit != token.end(); ++sit) {
+        *sit = tolower(*sit);
+      }
+      mert::Vocabulary::const_iterator cit = m_vocab->find(token);
+      if (cit == m_vocab->end()) {
+        encoded.push_back(kUnknownToken);
+      } else {
+        encoded.push_back(cit->second);
+      }
+    } else {
+      mert::Vocabulary::const_iterator cit = m_vocab->find(it->as_string());
+      if (cit == m_vocab->end()) {
+        encoded.push_back(kUnknownToken);
+      } else {
+        encoded.push_back(cit->second);
+      }
+    }
+  }
+}
+
+/**
+ * Set the factors, which should be used for this metric
+ */
+void Scorer::setFactors(const string& factors)
+{
+  if (factors.empty()) return;
+  vector<string> factors_vec;
+  split(factors, '|', factors_vec);
+  for(vector<string>::iterator it = factors_vec.begin(); it != factors_vec.end(); ++it)
+  {
+    int factor = atoi(it->c_str());
+    m_factors.push_back(factor);
+  }
+}
+
+/**
+ * Set unix filter, which will be used to preprocess the sentences
+ */
+void Scorer::setFilter(const string& filterCommand)
+{
+    if (filterCommand.empty()) return;
+    m_filter = new PreProcessFilter(filterCommand);
+}
+
+/**
+ * Take the factored sentence and return the desired factors
+ */
+string Scorer::applyFactors(const string& sentence) const
+{
+  if (m_factors.size() == 0) return sentence;
+
+  vector<string> tokens;
+  split(sentence, ' ', tokens);
+
+  stringstream sstream;
+  for (size_t i = 0; i < tokens.size(); ++i)
+  {
+    if (tokens[i] == "") continue;
+
+    vector<string> factors;
+    split(tokens[i], '|', factors);
+
+    int fsize = factors.size();
+
+    if (i > 0) sstream << " ";
+
+    for (size_t j = 0; j < m_factors.size(); ++j)
+    {
+      int findex = m_factors[j];
+      if (findex < 0 || findex >= fsize) throw runtime_error("Factor index is out of range.");
+
+      if (j > 0) sstream << "|";
+      sstream << factors[findex];
+    }
+  }
+  return sstream.str();
+}
+
+/**
+ * Preprocess the sentence with the filter (if given)
+ */
+string Scorer::applyFilter(const string& sentence) const
+{
+  if (m_filter)
+  {
+    return m_filter->ProcessSentence(sentence);
+  }
+  else
+  {
+    return sentence;
+  }
+}
+
+float Scorer::score(const candidates_t& candidates) const {
+  diffs_t diffs;
+  statscores_t scores;
+  score(candidates, diffs, scores);
+  return scores[0];
+}
+
 }

@@ -6,10 +6,10 @@ binmode(STDIN, ":utf8");
 binmode(STDOUT, ":utf8");
 binmode(STDERR, ":utf8");
 
-use FindBin qw($Bin);
+use FindBin qw($RealBin);
 use strict;
 
-my $mydir = "$Bin/nonbreaking_prefixes";
+my $mydir = "$RealBin/../../share/nonbreaking_prefixes";
 
 my %NONBREAKING_PREFIX = ();
 my $language = "en";
@@ -42,7 +42,7 @@ if (!(-e $prefixfile)) {
 }
 
 if (-e "$prefixfile") {
-	open(PREFIX, "<:utf8", "$prefixfile");
+	open(PREFIX, "<:utf8", "$prefixfile") or die "Cannot open: $!";
 	while (<PREFIX>) {
 		my $item = $_;
 		chomp($item);
@@ -84,16 +84,16 @@ sub do_it_for {
 }
 
 sub preprocess {
+	#this is one paragraph
+	my($text) = @_;
+
 	# clean up spaces at head and tail of each line as well as any double-spacing
 	$text =~ s/ +/ /g;
 	$text =~ s/\n /\n/g;
 	$text =~ s/ \n/\n/g;
 	$text =~ s/^ //g;
 	$text =~ s/ $//g;
-	
-	#this is one paragraph
-	my($text) = @_;
-	
+		
 	#####add sentence breaks as needed#####
 	
 	#non-period end of sentence markers (?!) followed by sentence starters.

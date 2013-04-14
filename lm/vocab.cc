@@ -80,14 +80,14 @@ void WriteWordsWrapper::Add(WordIndex index, const StringPiece &str) {
   buffer_.push_back(0);
 }
 
-void WriteWordsWrapper::Write(int fd) {
-  util::SeekEnd(fd);
+void WriteWordsWrapper::Write(int fd, uint64_t start) {
+  util::SeekOrThrow(fd, start);
   util::WriteOrThrow(fd, buffer_.data(), buffer_.size());
 }
 
 SortedVocabulary::SortedVocabulary() : begin_(NULL), end_(NULL), enumerate_(NULL) {}
 
-std::size_t SortedVocabulary::Size(std::size_t entries, const Config &/*config*/) {
+uint64_t SortedVocabulary::Size(uint64_t entries, const Config &/*config*/) {
   // Lead with the number of entries.  
   return sizeof(uint64_t) + sizeof(uint64_t) * entries;
 }
@@ -116,7 +116,9 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
   }
   *end_ = hashed;
   if (enumerate_) {
-    strings_to_enumerate_[end_ - begin_].assign(str.data(), str.size());
+    void *copied = string_backing_.Allocate(str.size());
+    memcpy(copied, str.data(), str.size());
+    strings_to_enumerate_[end_ - begin_] = StringPiece(static_cast<const char*>(copied), str.size());
   }
   ++end_;
   // This is 1 + the offset where it was inserted to make room for unk.  
@@ -125,13 +127,16 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
 
 void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
   if (enumerate_) {
-    util::PairedIterator<ProbBackoff*, std::string*> values(reorder_vocab + 1, &*strings_to_enumerate_.begin());
-    util::JointSort(begin_, end_, values);
+    if (!strings_to_enumerate_.empty()) {
+      util::PairedIterator<ProbBackoff*, StringPiece*> values(reorder_vocab + 1, &*strings_to_enumerate_.begin());
+      util::JointSort(begin_, end_, values);
+    }
     for (WordIndex i = 0; i < static_cast<WordIndex>(end_ - begin_); ++i) {
       // <unk> strikes again: +1 here.  
       enumerate_->Add(i + 1, strings_to_enumerate_[i]);
     }
     strings_to_enumerate_.clear();
+    string_backing_.FreeAll();
   } else {
     util::JointSort(begin_, end_, reorder_vocab + 1);
   }
@@ -142,11 +147,11 @@ void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
   bound_ = end_ - begin_ + 1;
 }
 
-void SortedVocabulary::LoadedBinary(int fd, EnumerateVocab *to) {
+void SortedVocabulary::LoadedBinary(bool have_words, int fd, EnumerateVocab *to) {
   end_ = begin_ + *(reinterpret_cast<const uint64_t*>(begin_) - 1);
   SetSpecial(Index("<s>"), Index("</s>"), 0);
   bound_ = end_ - begin_ + 1;
-  ReadWords(fd, to, bound_);
+  if (have_words) ReadWords(fd, to, bound_);
 }
 
 namespace {
@@ -163,7 +168,7 @@ struct ProbingVocabularyHeader {
 
 ProbingVocabulary::ProbingVocabulary() : enumerate_(NULL) {}
 
-std::size_t ProbingVocabulary::Size(std::size_t entries, const Config &config) {
+uint64_t ProbingVocabulary::Size(uint64_t entries, const Config &config) {
   return ALIGN8(sizeof(detail::ProbingVocabularyHeader)) + Lookup::Size(entries, config.probing_multiplier);
 }
 
@@ -194,19 +199,19 @@ WordIndex ProbingVocabulary::Insert(const StringPiece &str) {
   }
 }
 
-void ProbingVocabulary::FinishedLoading(ProbBackoff * /*reorder_vocab*/) {
+void ProbingVocabulary::InternalFinishedLoading() {
   lookup_.FinishedInserting();
   header_->bound = bound_;
   header_->version = kProbingVocabularyVersion;
   SetSpecial(Index("<s>"), Index("</s>"), 0);
 }
 
-void ProbingVocabulary::LoadedBinary(int fd, EnumerateVocab *to) {
+void ProbingVocabulary::LoadedBinary(bool have_words, int fd, EnumerateVocab *to) {
   UTIL_THROW_IF(header_->version != kProbingVocabularyVersion, FormatLoadException, "The binary file has probing version " << header_->version << " but the code expects version " << kProbingVocabularyVersion << ".  Please rerun build_binary using the same version of the code.");
   lookup_.LoadedBinary();
   bound_ = header_->bound;
   SetSpecial(Index("<s>"), Index("</s>"), 0);
-  ReadWords(fd, to, bound_);
+  if (have_words) ReadWords(fd, to, bound_);
 }
 
 void MissingUnknown(const Config &config) throw(SpecialWordMissingException) {
@@ -229,7 +234,7 @@ void MissingSentenceMarker(const Config &config, const char *str) throw(SpecialW
       if (config.messages) *config.messages << "Missing special word " << str << "; will treat it as <unk>.";
       break;
     case THROW_UP:
-      UTIL_THROW(SpecialWordMissingException, "The ARPA file is missing " << str << " and the model is configured to reject these models.  If you built your APRA with IRSTLM and forgot to run add-start-end.sh, complain to <bertoldi at fbk.eu> stating that you think build-lm.sh should do this by default, then go back and retrain your model from the start.  To bypass this check and treat " << str << " as an OOV, pass -s.  The resulting model will not work with e.g. Moses.");
+      UTIL_THROW(SpecialWordMissingException, "The ARPA file is missing " << str << " and the model is configured to reject these models.  Run build_binary -s to disable this check.");
   }
 }
 

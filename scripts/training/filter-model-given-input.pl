@@ -10,14 +10,14 @@
 
 use strict;
 
-use FindBin qw($Bin);
+use FindBin qw($RealBin);
 use Getopt::Long;
 
 my $SCRIPTS_ROOTDIR;
 if (defined($ENV{"SCRIPTS_ROOTDIR"})) {
     $SCRIPTS_ROOTDIR = $ENV{"SCRIPTS_ROOTDIR"};
 } else {
-    $SCRIPTS_ROOTDIR = $Bin;
+    $SCRIPTS_ROOTDIR = $RealBin;
     if ($SCRIPTS_ROOTDIR eq '') {
         $SCRIPTS_ROOTDIR = dirname(__FILE__);
     }
@@ -37,8 +37,10 @@ my $ZCAT = "gzip -cd";
 my $opt_hierarchical = 0;
 my $binarizer = undef;
 my $opt_min_non_initial_rule_count = undef;
+my $opt_gzip = 1; # gzip output files (so far only phrase-based ttable until someone tests remaining models and formats)
 
 GetOptions(
+    "gzip!" => \$opt_gzip,
     "Hierarchical" => \$opt_hierarchical,
     "Binarizer=s" => \$binarizer,
     "MinNonInitialRuleCount=i" => \$opt_min_non_initial_rule_count
@@ -90,11 +92,12 @@ while(<INI>) {
     if (/ttable-file\]/) {
       while(1) {	       
     	my $table_spec = <INI>;
-    	if ($table_spec !~ /^(\d+) ([\d\,\-]+) ([\d\,\-]+) (\d+) (\S+)$/) {
+    	if ($table_spec !~ /^(\d+) ([\d\,\-]+) ([\d\,\-]+) (\d+) (\S+)( \S+)?$/) {
     	    print INI_OUT $table_spec;
     	    last;
     	}
-    	my ($phrase_table_impl,$source_factor,$t,$w,$file) = ($1,$2,$3,$4,$5);
+    	my ($phrase_table_impl,$source_factor,$t,$w,$file,$table_flag) = ($1,$2,$3,$4,$5,$6);
+      $table_flag = "" if (!defined($table_flag));
 
         if (($phrase_table_impl ne "0" && $phrase_table_impl ne "6") || $file =~ /glue-grammar/) {
             # Only Memory ("0") and NewFormat ("6") can be filtered.
@@ -113,12 +116,17 @@ while(<INI>) {
         $new_name .= ".$cnt";
         $new_name_used{$new_name} = 1;
 	if ($binarizer && $phrase_table_impl == 6) {
-    	  print INI_OUT "2 $source_factor $t $w $new_name.bin\n";
+    	  print INI_OUT "2 $source_factor $t $w $new_name.bin$table_flag\n";
         }
         elsif ($binarizer && $phrase_table_impl == 0) {
-    	  print INI_OUT "1 $source_factor $t $w $new_name\n";
+          if ($binarizer =~ /processPhraseTableMin/) {
+            print INI_OUT "12 $source_factor $t $w $new_name$table_flag\n";
+          } else {
+    	    print INI_OUT "1 $source_factor $t $w $new_name$table_flag\n";
+          }
         } else {
-    	  print INI_OUT "$phrase_table_impl $source_factor $t $w $new_name\n";
+          $new_name .= ".gz" if $opt_gzip;
+    	    print INI_OUT "$phrase_table_impl $source_factor $t $w $new_name$table_flag\n";
         }
     	push @TABLE_NEW_NAME,$new_name;
 
@@ -143,7 +151,7 @@ while(<INI>) {
 
     	$file =~ s/^.*\/+([^\/]+)/$1/g;
     	my $new_name = "$dir/$file";
-	$new_name =~ s/\.gz//;
+	    $new_name =~ s/\.gz//;
     	print INI_OUT "$factors $t $w $new_name\n";
     	push @TABLE_NEW_NAME,$new_name;
 
@@ -178,7 +186,7 @@ if ($opt_hierarchical)
 my %PHRASE_USED;
 if (!$opt_hierarchical) {
     # get the phrase pairs appearing in the input text, up to the $MAX_LENGTH
-    open(INPUT,$input) or die "Can't read $input";
+    open(INPUT,mk_open_string($input)) or die "Can't read $input";
     while(my $line = <INPUT>) {
         chomp($line);
         my @WORD = split(/ +/,$line);
@@ -204,6 +212,22 @@ if (!$opt_hierarchical) {
     close(INPUT);
 }
 
+sub mk_open_string {
+  my $file = shift;
+  my $openstring;
+  if ($file !~ /\.gz$/ && -e "$file.gz") {
+    $openstring = "$ZCAT $file.gz |";
+  } elsif ($file =~ /\.gz$/) {
+    $openstring = "$ZCAT $file |";
+  } elsif ($opt_hierarchical) {
+    $openstring = "cat $file |";
+  } else {
+    $openstring = "< $file";
+  }
+  return $openstring;
+}
+
+
 # filter files
 for(my $i=0;$i<=$#TABLE;$i++) {
     my ($used,$total) = (0,0);
@@ -212,18 +236,16 @@ for(my $i=0;$i<=$#TABLE;$i++) {
     my $new_file = $TABLE_NEW_NAME[$i];
     print STDERR "filtering $file -> $new_file...\n";
 
-    my $openstring;
-    if ($file !~ /\.gz$/ && -e "$file.gz") {
-      $openstring = "$ZCAT $file.gz |";
-    } elsif ($file =~ /\.gz$/) {
-      $openstring = "$ZCAT $file |";
-    } elsif ($opt_hierarchical) {
-      $openstring = "cat $file |";
+    my $openstring = mk_open_string($file);
+
+    my $new_openstring;
+    if ($new_file =~ /\.gz$/) {
+      $new_openstring = "| gzip -c > $new_file";
     } else {
-      $openstring = "< $file";
+      $new_openstring = ">$new_file";
     }
 
-    open(FILE_OUT,">$new_file") or die "Can't write $new_file";
+    open(FILE_OUT,$new_openstring) or die "Can't write to $new_openstring";
 
     if ($opt_hierarchical) {
         my $tmp_input = $TMP_INPUT_FILENAME{$factors};
@@ -257,11 +279,16 @@ for(my $i=0;$i<=$#TABLE;$i++) {
         # ... hierarchical translation model
         if ($opt_hierarchical) {
           my $cmd = "$binarizer $new_file $new_file.bin";
-	  print STDERR $cmd."\n";
-	  print STDERR `$cmd`;
+          print STDERR $cmd."\n";
+          print STDERR `$cmd`;
         }
         # ... phrase translation model
-        else { 
+        elsif ($binarizer =~ /processPhraseTableMin/) {
+          #compact phrase table
+          my $cmd = "LC_ALL=C sort -T $dir $new_file > $new_file.sorted; $binarizer -in $new_file.sorted -out $new_file -nscores $TABLE_WEIGHTS[$i]; rm $new_file.sorted";
+          print STDERR $cmd."\n";
+          print STDERR `$cmd`;
+        } else { 
           my $cmd = "cat $new_file | LC_ALL=C sort -T $dir | $binarizer -ttable 0 0 - -nscores $TABLE_WEIGHTS[$i] -out $new_file";
           print STDERR $cmd."\n";
           print STDERR `$cmd`;
@@ -271,8 +298,13 @@ for(my $i=0;$i<=$#TABLE;$i++) {
       else {
         my $lexbin = $binarizer; 
         $lexbin =~ s/PhraseTable/LexicalTable/;
-        $lexbin =~ s/^\s*(\S+)\s.+/$1/; # no options
-        my $cmd = "$lexbin -in $new_file -out $new_file";
+        my $cmd;
+        if ($lexbin =~ /processLexicalTableMin/) {
+          $cmd = "LC_ALL=C sort -T $dir $new_file > $new_file.sorted;  $lexbin -in $new_file.sorted -out $new_file; rm $new_file.sorted";
+        } else {
+          $lexbin =~ s/^\s*(\S+)\s.+/$1/; # no options
+          $cmd = "$lexbin -in $new_file -out $new_file";
+        }
         print STDERR $cmd."\n";
         print STDERR `$cmd`;
       }
@@ -293,7 +325,7 @@ close(INFO);
 
 
 print "To run the decoder, please call:
-  moses -f $dir/moses.ini < $input\n";
+  moses -f $dir/moses.ini -i $input\n";
 
 sub safesystem {
   print STDERR "Executing: @_\n";

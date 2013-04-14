@@ -58,7 +58,7 @@ uint8_t *GrowForSearch(const Config &config, std::size_t vocab_pad, std::size_t 
 
 // Write header to binary file.  This is done last to prevent incomplete files
 // from loading.   
-void FinishFile(const Config &config, ModelType model_type, unsigned int search_version, const std::vector<uint64_t> &counts, Backing &backing);
+void FinishFile(const Config &config, ModelType model_type, unsigned int search_version, const std::vector<uint64_t> &counts,  std::size_t vocab_pad, Backing &backing);
 
 namespace detail {
 
@@ -70,7 +70,7 @@ void MatchCheck(ModelType model_type, unsigned int search_version, const Paramet
 
 void SeekPastHeader(int fd, const Parameters &params);
 
-uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t memory_size, Backing &backing);
+uint8_t *SetupBinary(const Config &config, const Parameters &params, uint64_t memory_size, Backing &backing);
 
 void ComplainAboutARPA(const Config &config, ModelType model_type);
 
@@ -90,7 +90,7 @@ template <class To> void LoadLM(const char *file, const Config &config, To &to) 
       new_config.probing_multiplier = params.fixed.probing_multiplier;
       detail::SeekPastHeader(backing.file.get(), params);
       To::UpdateConfigFromBinary(backing.file.get(), params.counts, new_config);
-      std::size_t memory_size = To::Size(params.counts, new_config);
+      uint64_t memory_size = To::Size(params.counts, new_config);
       uint8_t *start = detail::SetupBinary(new_config, params, memory_size, backing);
       to.InitializeFromBinary(start, params, new_config, backing.file.get());
     } else {
