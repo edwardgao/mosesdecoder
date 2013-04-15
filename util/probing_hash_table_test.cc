@@ -40,7 +40,6 @@ BOOST_AUTO_TEST_CASE(simple) {
   size_t size = Table::Size(10, 1.2);
   boost::scoped_array<char> mem(new char[size]);
   memset(mem.get(), 0, size);
-#endif
 
   Table table(mem.get(), size);
   const Entry *i = NULL;

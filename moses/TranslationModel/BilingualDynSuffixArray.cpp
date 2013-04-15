@@ -507,9 +507,6 @@ void BilingualDynSuffixArray::addSntPair(string& source, string& target, string&
   sphrase.CreateFromString(m_inputFactors, source, factorDelimiter);
   m_srcVocab->MakeOpen();
   std::vector<wordID_t> sIDs(sphrase.GetSize());
-  wordID_t *sIDs = new wordID_t[sphrase.GetSize()];
-#else
-#endif
   // store words in vocabulary and corpus
   for(int i = sphrase.GetSize()-1; i >= 0; --i) {
     sIDs[i] = m_srcVocab->GetWordID(sphrase.GetWord(i));  // get vocab id backwards
@@ -525,9 +522,6 @@ void BilingualDynSuffixArray::addSntPair(string& source, string& target, string&
   tphrase.CreateFromString(m_outputFactors, target, factorDelimiter);
   m_trgVocab->MakeOpen();
   std::vector<wordID_t> tIDs(tphrase.GetSize());
-  wordID_t *tIDs = new wordID_t[tphrase.GetSize()];
-#else
-#endif
   for(int i = tphrase.GetSize()-1; i >= 0; --i) {
     tIDs[i] = m_trgVocab->GetWordID(tphrase.GetWord(i));  // get vocab id
   }
