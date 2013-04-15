@@ -3,23 +3,30 @@
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
 SET(LIBUTIL_SRC 
-bit_packing.cc bit_packing.hh
-bit_packing_test.cc check.hh
-ersatz_progress.cc ersatz_progress.hh
-exception.cc exception.hh
-file.cc file.hh
-file_piece.cc file_piece.hh
-file_piece_test.cc getopt.c
-getopt.hh have.hh
-joint_sort.hh joint_sort_test.cc
-key_value_packing.hh key_value_packing_test.cc
-mmap.cc mmap.hh
-murmur_hash.cc murmur_hash.hh
-probing_hash_table.hh probing_hash_table_test.cc
-proxy_iterator.hh scoped.hh
-sized_iterator.hh sorted_uniform.hh
-sorted_uniform_test.cc string_piece.hh
-tokenize_piece.hh tokenize_piece_test.cc
+    mmap.cc
+    stream/chain.cc
+    stream/multi_progress.cc
+    stream/line_input.cc
+    stream/io.cc
+    double-conversion/fast-dtoa.cc
+    double-conversion/diy-fp.cc
+    double-conversion/double-conversion.cc
+    double-conversion/strtod.cc
+    double-conversion/fixed-dtoa.cc
+    double-conversion/cached-powers.cc
+    double-conversion/bignum.cc
+    double-conversion/bignum-dtoa.cc
+    pool.cc
+    file_piece.cc
+    file.cc
+    read_compressed.cc
+    exception.cc
+    scoped.cc
+    ersatz_progress.cc
+    string_piece.cc
+    bit_packing.cc
+    murmur_hash.cc
+    usage.cc
     )
 
 

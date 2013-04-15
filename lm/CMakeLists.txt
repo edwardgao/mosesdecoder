@@ -12,16 +12,19 @@ ENDIF (ZLIB_FOUND)
 
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
+#ADD_DEFINITIONS (-DKENLM_MAX_ORDER=6)
+ADD_DEFINITIONS( -DMAX_NUM_FACTORS=${MAX_FACTOR} -DKENLM_MAX_ORDER=${MAX_KEN_ORDER} )
+
 SET(LIBKEN_SRC
     bhiksha.cc bhiksha.hh
     binary_format.cc binary_format.hh
     blank.hh 
     config.cc config.hh
     enumerate_vocab.hh facade.hh
-    left.hh left_test.cc
+    left.hh 
     lm_exception.cc lm_exception.hh
     max_order.hh model.cc
-    model.hh model_test.cc
+    model.hh 
     model_type.hh 
     ngram_query.hh quantize.cc
     quantize.hh read_arpa.cc
@@ -31,6 +34,7 @@ SET(LIBKEN_SRC
     trie.cc trie.hh
     trie_sort.cc trie_sort.hh
     virtual_interface.cc virtual_interface.hh
+    value_build.cc
     vocab.cc vocab.hh
     weights.hh word_index.hh
 )
@@ -48,37 +52,39 @@ SET_TARGET_PROPERTIES(ken PROPERTIES
     COMPILE_DEFINITIONS_DEBUG _DEBUG
 )
 
-#BUILD BINARY
+#BUILD BINARY (Removed)
 
-SET( BUILDBINARY_SRC build_binary.cc )
+#SET( BUILDBINARY_SRC build_binary.cc )
 
-ADD_EXECUTABLE(build_binary ${BUILDBINARY_SRC} )
+#ADD_EXECUTABLE(build_binary ${BUILDBINARY_SRC} )
 
-TARGET_LINK_LIBRARIES (
-    build_binary
-    ken
-    util
-    ${ZLIB_LIBRARIES}
-    ${Boost_LIBRARIES}
-    )
+#TARGET_LINK_LIBRARIES (
+#    build_binary
+#    ken
+#    util
+#    ${ZLIB_LIBRARIES}
+#    ${Boost_LIBRARIES}
+#    )
 
 #NGRAM Query
 
-SET( NGQUERY_SRC ngram_query.cc )
+#SET( NGQUERY_SRC ngram_query.cc )
 
-ADD_EXECUTABLE(ngram_query ${NGQUERY_SRC} )
+#ADD_EXECUTABLE(ngram_query ${NGQUERY_SRC} )
 
-TARGET_LINK_LIBRARIES (
-    ngram_query
-    ken
-    util
-    ${ZLIB_LIBRARIES}
-    ${Boost_LIBRARIES}
-    )
+#TARGET_LINK_LIBRARIES (
+#    ngram_query
+#    ken
+#    util
+#    ${ZLIB_LIBRARIES}
+#    ${Boost_LIBRARIES}
+#    )
 
 
 
-INSTALL(TARGETS ken ngram_query build_binary 
+INSTALL(TARGETS ken 
+    #ngram_query 
+    #build_binary 
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib

@@ -14,34 +14,57 @@ SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR} )
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/util )
-INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/moses/src )
+INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/moses/ )
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/lm )
+INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/search )
 
 
 #BUILD BINARY
 
-SET( MOSESCHART_SRC Main.cpp mbr.cpp IOWrapper.cpp TranslationAnalysis.cpp) 
+SET( MOSES_SRC Main.cpp mbr.cpp IOWrapper.cpp TranslationAnalysis.cpp LatticeMBR.cpp )
 
-ADD_EXECUTABLE(moseschart ${MOSESCHART_SRC} )
+ADD_EXECUTABLE(moses ${MOSES_SRC} )
 
 TARGET_LINK_LIBRARIES (
-    moseschart
+    moses
     moseslib
     ondiskpt
     ken
+    util
+    search
+    ${ZLIB_LIBRARIES}
+    ${Boost_LIBRARIES}
+    )
+
+#set properties on the libraries
+SET_TARGET_PROPERTIES(moses PROPERTIES
+    VERSION ${MOSES_VERSION}
+    COMPILE_DEFINITIONS_DEBUG _DEBUG
+)
+
+SET( LMBRGRID_SRC LatticeMBRGrid.cpp LatticeMBR.cpp IOWrapper.cpp)
+
+ADD_EXECUTABLE(lmbrgrid ${LMBRGRID_SRC} )
+
+TARGET_LINK_LIBRARIES (
+    lmbrgrid
+    moseslib
+    ondiskpt
+    ken
+    search
     util
     ${ZLIB_LIBRARIES}
     ${Boost_LIBRARIES}
     )
 
 #set properties on the libraries
-SET_TARGET_PROPERTIES(moseschart PROPERTIES
+SET_TARGET_PROPERTIES(lmbrgrid PROPERTIES
     VERSION ${MOSES_VERSION}
     COMPILE_DEFINITIONS_DEBUG _DEBUG
 )
 
 
-INSTALL(TARGETS moseschart 
+INSTALL(TARGETS moses lmbrgrid 
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
