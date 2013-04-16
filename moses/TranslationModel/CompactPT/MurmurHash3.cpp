@@ -18,6 +18,8 @@
 
 #define FORCE_INLINE	__forceinline
 
+typedef unsigned int uint32_t;
+
 #include <stdlib.h>
 
 #define ROTL32(x,y)	_rotl(x,y)

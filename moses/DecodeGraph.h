@@ -27,6 +27,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <list>
 #include <iterator>
 #include "TypeDef.h"
+#include <limits>
+
+using namespace std;
+
+#if (defined( _MSC_VER))
+#undef max
+#endif
 
 namespace Moses
 {
@@ -47,7 +54,7 @@ public:
     **/
   DecodeGraph(size_t position)
     : m_position(position)
-    , m_maxChartSpan(NOT_FOUND)
+	, m_maxChartSpan(NOT_FOUND)
   {}
 
   // for chart decoding
@@ -78,6 +85,7 @@ public:
   }
 
   size_t GetMaxChartSpan() const {
+	  
     CHECK(m_maxChartSpan != NOT_FOUND);
     return m_maxChartSpan;
   }

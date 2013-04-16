@@ -10,7 +10,7 @@
 
 #if defined(__GLIBCXX__) || defined(__GLIBCPP__)
 #include <ext/stdio_filebuf.h>
-
+#endif
 #define BUFFER_SIZE (32768)
 
 namespace MosesTuning 
@@ -162,11 +162,7 @@ public:
 private:
   std::ostream* _stream;
 };
-
-#else
-#error "Not supported"
-#endif
-
 }
+
 
 #endif // _FDSTREAM_

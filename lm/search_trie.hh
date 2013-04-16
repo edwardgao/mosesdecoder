@@ -31,14 +31,13 @@ template <class Quant, class Bhiksha> class TrieSearch {
     typedef ::lm::ngram::trie::UnigramPointer UnigramPointer;
     typedef typename Quant::MiddlePointer MiddlePointer;
     typedef typename Quant::LongestPointer LongestPointer;
-#ifdef WIN32
-	typedef ::lm::ngram::trie::BitPackedMiddle<typename Quant::Middle, Bhiksha> Middle;
-
-	typedef ::lm::ngram::trie::BitPackedLongest<typename Quant::Longest> Longest;
-#else
+/*#ifdef WIN32
+	typedef ::lm::ngram::trie::BitPackedMiddle<typename Quant::Middle> Middle;
+	typedef ::lm::ngram::trie::BitPackedLongest Longest;
+#else*/
 
     static const bool kDifferentRest = false;
-#endif
+//#endif
 
     static const ModelType kModelType = static_cast<ModelType>(TRIE_SORTED + Quant::kModelTypeAdd + Bhiksha::kModelTypeAdd);
 

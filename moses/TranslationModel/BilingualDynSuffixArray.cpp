@@ -540,10 +540,7 @@ void BilingualDynSuffixArray::addSntPair(string& source, string& target, string&
   m_trgVocab->MakeClosed();
   //for(size_t i=0; i < sphrase.GetSize(); ++i)
     //ClearWordInCache(sIDs[i]);
-#ifdef WIN32
-  delete[] sIDs;
-  delete[] tIDs;
-#endif
+
 }
 void BilingualDynSuffixArray::ClearWordInCache(wordID_t srcWord) {
   if(m_freqWordsCached.find(srcWord) != m_freqWordsCached.end())

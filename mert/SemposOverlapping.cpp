@@ -2,6 +2,7 @@
 #include "SemposScorer.h"
 
 #include <algorithm>
+#include <iterator>
 #include <stdexcept>
 
 using namespace std;
@@ -36,7 +37,7 @@ vector<int> CapMicroOverlapping::prepareStats(const sentence_t& cand, const sent
   sentence_t intersection;
 
   set_intersection(cand.begin(), cand.end(), ref.begin(), ref.end(),
-                   inserter(intersection, intersection.begin()));
+                   std::inserter(intersection, intersection.begin()));
 
   int multCoeff = 1000;
 
@@ -72,7 +73,7 @@ vector<int> CapMacroOverlapping::prepareStats(const sentence_t& cand, const sent
   sentence_t intersection;
 
   set_intersection(cand.begin(), cand.end(), ref.begin(), ref.end(),
-                   inserter(intersection, intersection.begin()));
+                   std::inserter(intersection, intersection.begin()));
 
   int multCoeff = 1000;
 

@@ -24,8 +24,10 @@
 #include <string.h>
 #include <limits.h>
 #include <sys/types.h>
+#if (!defined(WIN32) && ! defined(WIN64))
 #include <unistd.h>
 #include <dirent.h>
+#endif
 
 #include <fstream>
 #include <string>

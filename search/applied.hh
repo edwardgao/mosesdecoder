@@ -7,8 +7,15 @@
 
 #include <math.h>
 
-namespace search {
+#if (defined(WIN32) || defined(WIN64))
+#include <limits>
+#endif
 
+namespace search {
+	#if (defined(WIN32) || defined(WIN64))
+		static const float INFINITY = std::numeric_limits<Score>::infinity();
+		static const float NAN = std::numeric_limits<Score>::quiet_NaN();
+	#endif
 // A full hypothesis: a score, arity of the rule, a pointer to the decoder's rule (Note), and pointers to non-terminals that were substituted.  
 template <class Below> class GenericApplied : public Header {
   public:
@@ -69,6 +76,7 @@ class SingleBest {
     NBestComplete Complete(PartialEdge partial) {
       if (!partial.Valid()) 
         return NBestComplete(NULL, lm::ngram::ChartState(), -INFINITY);
+
       void *place_final = pool_.Allocate(Applied::Size(partial.GetArity()));
       Applied(place_final, partial);
       return NBestComplete(

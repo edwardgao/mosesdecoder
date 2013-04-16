@@ -6,6 +6,7 @@
 #ifdef WIN32
 #include <vccomp/getopt.h>
 #include <string>
+#include <ctime>
 #define strtof stof
 #define srandom srand
 #define random rand

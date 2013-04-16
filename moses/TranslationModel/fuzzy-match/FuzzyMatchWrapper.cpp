@@ -814,6 +814,7 @@ unsigned int FuzzyMatchWrapper::compute_length( const vector< WORD_ID > &sentenc
 		}
 		//cout << best_cost << " ||| " << best_match << " ||| " << best_path << endl;
 	}
+	return 0;
 }
 
 /* definition of short matches

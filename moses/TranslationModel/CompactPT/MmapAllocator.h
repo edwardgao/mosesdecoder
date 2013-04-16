@@ -24,16 +24,31 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <limits>
 #include <iostream>
+#if (! defined(WIN32) && ! defined(WIN64))
 #include <sys/mman.h>
-#include <cstdio>
 #include <unistd.h>
+#else 
+#include <windows.h>
+#endif
+#include <cstdio>
+
 
 namespace Moses
 {
     template <class T>
     class MmapAllocator
     {
-      protected:    
+#if (defined(WIN32) || defined(WIN64))
+#define _SC_PAGE_SIZE
+	private:
+		size_t sysconf()
+		{
+			SYSTEM_INFO si;
+			GetSystemInfo(&si);
+			return si.dwPageSize;
+		}
+#endif
+     protected:    
         std::FILE* m_file_ptr;
         size_t m_file_desc;
         
@@ -200,5 +215,9 @@ namespace Moses
     }
 
 }
+
+#if (defined(WIN32) || defined(WIN64))
+#undef _SC_PAGE_SIZE
+#endif
 
 #endif

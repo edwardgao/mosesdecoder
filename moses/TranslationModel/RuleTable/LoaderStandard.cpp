@@ -24,6 +24,8 @@
 #include <iterator>
 #include <algorithm>
 #include <iostream>
+#include <numeric_limits>
+
 #include <sys/stat.h>
 #include <stdlib.h>
 #include "Trie.h"
@@ -42,6 +44,8 @@
 #include "util/double-conversion/double-conversion.h"
 
 using namespace std;
+
+
 
 namespace Moses
 {
@@ -210,7 +214,11 @@ bool RuleTableLoaderStandard::Load(FormatType format
     for (util::TokenIter<util::AnyCharacter, true> s(scoreString, " \t"); s; ++s) {
       int processed;
       float score = converter.StringToFloat(s->data(), s->length(), &processed);
-      UTIL_THROW_IF(isnan(score), util::Exception, "Bad score " << *s << " on line " << count);
+#if ( defined(WIN32) || defined(WIN64))
+      UTIL_THROW_IF(_isnan(score), util::Exception, "Bad score " << *s << " on line " << count);
+#else 
+	  UTIL_THROW_IF(isnan(score), util::Exception, "Bad score " << *s << " on line " << count);
+#endif
       scoreVector.push_back(FloorScore(TransformScore(score)));
     }
     const size_t numScoreComponents = ruleTable.GetFeature()->GetNumScoreComponents();

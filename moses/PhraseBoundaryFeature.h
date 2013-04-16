@@ -47,6 +47,7 @@ public:
                                   ScoreComponentCollection* ) const
                                   {
                                     abort();
+									return 0;
                                   }
   
   void SetSparseProducerWeight(float weight) { m_sparseProducerWeight = weight; }

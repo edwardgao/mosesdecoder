@@ -101,21 +101,22 @@ class StringVector
         StringVector<ValueT, PosT, Allocator>* m_container;
     
       public:
-        RangeIterator();
-        RangeIterator(StringVector<ValueT, PosT, Allocator> &sv, PosT index=0);
+		  RangeIterator(): m_index(0), m_container(0) {};
+        RangeIterator(StringVector<ValueT, PosT, Allocator> &sv, PosT index=0) : m_index(index), m_container(&sv) { };
         
-        PosT get_index();
+		PosT get_index() {return m_index;}
   
       private:
         friend class boost::iterator_core_access;
         
-        range dereference() const;
-        bool equal(RangeIterator const& other) const;
-        void increment();
-        void decrement();
-        void advance(PosT n);
+		range dereference() const {return range(m_container->begin(m_index), m_container->end(m_index) );};
+        inline bool equal(RangeIterator const& other) const {return m_index == other.m_index && m_container == other.m_container;}
+        inline void increment(){  m_index++; }
+
+		inline void decrement() { m_index--;}
+		inline void advance(PosT n) { m_index += n;}
         
-        PosT distance_to(RangeIterator const& other) const;
+		inline PosT distance_to(RangeIterator const& other) const {return other.m_index - m_index;}
     };
     
     // ********** StringIterator **********
@@ -129,20 +130,20 @@ class StringVector
         StringVector<ValueT, PosT, Allocator>* m_container;
     
       public:
-        StringIterator();
-        StringIterator(StringVector<ValueT, PosT, Allocator> &sv, PosT index=0);
+        StringIterator() : m_index(0), m_container(0) { };
+        StringIterator(StringVector<ValueT, PosT, Allocator> &sv, PosT index=0) : m_index(index), m_container(&sv) { }
             
         PosT get_index();
         
       private:
         friend class boost::iterator_core_access;
         
-        const std::string dereference() const;
-        bool equal(StringIterator const& other) const;
-        void increment();
-        void decrement();
-        void advance(PosT n);
-        PosT distance_to(StringIterator const& other) const;
+        inline const std::string dereference() const { return StringVector<ValueT, PosT, Allocator>::range(m_container->begin(m_index), m_container->end(m_index)).str();}
+		inline bool equal(StringIterator const& other) const {return m_index == other.m_index && m_container == other.m_container;}
+		inline void increment() { m_index++;}
+		inline void decrement() { m_index--;}
+		inline void advance(PosT n) {m_index += n;}
+		inline PosT distance_to(StringIterator const& other) const {return other.m_index - m_index;}
     };
 
     typedef RangeIterator iterator;
@@ -512,116 +513,8 @@ PosT StringVector<ValueT, PosT, Allocator>::find(const char* c) const
 
 // RangeIterator
 
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-StringVector<ValueT, PosT, Allocator>::RangeIterator::RangeIterator() : m_index(0), m_container(0) { }
 
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-StringVector<ValueT, PosT, Allocator>::RangeIterator::RangeIterator(StringVector<ValueT, PosT, Allocator> &sv, PosT index)
-  : m_index(index), m_container(&sv) { }
     
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-PosT StringVector<ValueT, PosT, Allocator>::RangeIterator::get_index()
-{
-  return m_index;
-}
-    
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-typename StringVector<ValueT, PosT, Allocator>::range
-  StringVector<ValueT, PosT, Allocator>::RangeIterator::dereference() const
-{
-  return typename StringVector<ValueT, PosT, Allocator>::range(
-    m_container->begin(m_index),
-    m_container->end(m_index)
-  );
-}
-
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-bool StringVector<ValueT, PosT, Allocator>::RangeIterator::equal(
-  StringVector<ValueT, PosT, Allocator>::RangeIterator const& other) const
-{
-  return m_index == other.m_index && m_container == other.m_container;
-}
-
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-void StringVector<ValueT, PosT, Allocator>::RangeIterator::increment()
-{
-  m_index++;
-}
-
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-void StringVector<ValueT, PosT, Allocator>::RangeIterator::decrement()
-{
-  m_index--;
-}
-
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-void StringVector<ValueT, PosT, Allocator>::RangeIterator::advance(PosT n)
-{
-  m_index += n;
-}
-
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-PosT StringVector<ValueT, PosT, Allocator>::RangeIterator::distance_to(
-  StringVector<ValueT, PosT, Allocator>::RangeIterator const& other) const
-{
-  return other.m_index - m_index;
-}
-
-// StringIterator
-
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-StringVector<ValueT, PosT, Allocator>::StringIterator::StringIterator()
-  : m_index(0), m_container(0) { }
-
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-StringVector<ValueT, PosT, Allocator>::StringIterator::StringIterator(
-  StringVector<ValueT, PosT, Allocator> &sv, PosT index) : m_index(index),
-  m_container(&sv) { }
-    
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-PosT StringVector<ValueT, PosT, Allocator>::StringIterator::get_index()
-{
-  return m_index;
-}
-    
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-const std::string StringVector<ValueT, PosT, Allocator>::StringIterator::dereference() const
-{
-  return StringVector<ValueT, PosT, Allocator>::range(m_container->begin(m_index),
-    m_container->end(m_index)).str();    
-}
-
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-bool StringVector<ValueT, PosT, Allocator>::StringIterator::equal(
-  StringVector<ValueT, PosT, Allocator>::StringIterator const& other) const
-{
-  return m_index == other.m_index && m_container == other.m_container;
-}
-
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-void StringVector<ValueT, PosT, Allocator>::StringIterator::increment()
-{
-  m_index++;
-}
-
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-void StringVector<ValueT, PosT, Allocator>::StringIterator::decrement()
-{
-  m_index--;
-}
-
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-void StringVector<ValueT, PosT, Allocator>::StringIterator::advance(PosT n)
-{
-  m_index += n;
-}
-
-template<typename ValueT, typename PosT, template <typename> class Allocator>
-PosT StringVector<ValueT, PosT, Allocator>::StringIterator::distance_to(
-  StringVector<ValueT, PosT, Allocator>::StringIterator const& other) const
-{
-  return other.m_index - m_index;    
-}
 
 // ********** Some typedefs **********
 

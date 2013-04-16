@@ -1,7 +1,7 @@
 #include "search/vertex.hh"
 
 #include "search/context.hh"
-
+#include "search/applied.hh"
 #include <boost/unordered_map.hpp>
 
 #include <algorithm>

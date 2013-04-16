@@ -62,6 +62,10 @@ template <class Except, class Data> typename Except::template ExceptionTag<Excep
 #endif
 #endif
 
+#if (defined(_MSC_VER))
+#undef max
+#endif
+
 /* Create an instance of Exception, add the message Modify, and throw it.
  * Modify is appended to the what() message and can contain << for ostream
  * operations.  

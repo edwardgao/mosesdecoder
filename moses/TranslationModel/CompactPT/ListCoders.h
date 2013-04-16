@@ -246,7 +246,7 @@ class Simple9
         uint lastyes = 0;
         uint j = 0;
         
-        double log2 = log(2);
+        double log2 = log((float)2);
         while(j < 9 && lastpos < 28 && (i+lastpos) < end)
         {
           if(lastpos >= parts[j]) 
@@ -254,10 +254,10 @@ class Simple9
           
           buffer[lastpos] = *(i + lastpos);
           
-          uint reqbit = ceil(log(buffer[lastpos]+1)/log2);
+          uint reqbit = ceil(log((float)buffer[lastpos]+1)/log2);
           assert(reqbit <= 28);
           
-          uint bit = 28/floor(28/reqbit);
+          uint bit = 28/std::floor((float)(28/reqbit));
           if(lastbit < bit)
               lastbit = bit;
               
