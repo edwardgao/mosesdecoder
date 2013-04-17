@@ -62,8 +62,11 @@ PreProcessFilter::PreProcessFilter(const string& filterCommand)
     // Create the pipes
     // We do this before the fork so both processes will know about
     // the same pipe and they can communicate.
-
+#ifdef _MSC_VER
     pipe_status = _pipe(pipefds_input);
+#else    
+    pipe_status = pipe(pipefds_input);
+#endif
     if (pipe_status == -1)
     {
         perror("Error creating the pipe");

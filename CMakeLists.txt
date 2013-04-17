@@ -93,8 +93,14 @@ set(Boost_USE_STATIC_LIBS        ON)
 set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 
+
+IF(WIN32)
 FIND_PACKAGE( Boost 1.46 COMPONENTS regex thread "program_options" filesystem
-    system unit_test_framework iostreams zlib)
+    system unit_test_framework iostreams zlib )
+ELSE()
+FIND_PACKAGE( Boost 1.46 COMPONENTS regex thread "program_options" filesystem
+    system unit_test_framework iostreams )
+ENDIF(WIN32)
 
 IF(Boost_FOUND)
     IF (NOT _boost_IN_CACHE)

@@ -34,6 +34,11 @@ SET( MOSES_SRC Main.cpp mbr.cpp IOWrapper.cpp TranslationAnalysis.cpp LatticeMBR
 
 ADD_EXECUTABLE(moses ${MOSES_SRC} )
 
+IF(WIN32)
+ELSE()
+    SET (BZL bz2 )
+ENDIF(WIN32)
+
 TARGET_LINK_LIBRARIES (
     moses
     moseslib
@@ -43,6 +48,7 @@ TARGET_LINK_LIBRARIES (
     search
     ${ZLIB_LIBRARIES}
     ${Boost_LIBRARIES}
+    ${BZL}
     )
 
 #set properties on the libraries
