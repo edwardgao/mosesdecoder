@@ -27,6 +27,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "util/file.hh"
 
+#ifdef _MSC_VER
+#define MmapAllocator std::allocator
+#endif
+
 namespace Moses
 {
     
@@ -112,7 +116,7 @@ PhraseTableCreator::PhraseTableCreator(std::string inPath,
   // 1st pass
   std::cerr << "Pass " << cur_pass << "/" << all_passes << ": Creating source phrase index + Encoding target phrases" << std::endl;
   m_srcHash.BeginSave(m_outFile);
-  
+#ifndef _MSC_VER  
   if(tempfilePath.size()) {
     MmapAllocator<unsigned char> allocEncoded(util::FMakeTemp(tempfilePath));
     m_encodedTargetPhrases = new StringVector<unsigned char, unsigned long, MmapAllocator>(allocEncoded);
@@ -120,6 +124,9 @@ PhraseTableCreator::PhraseTableCreator(std::string inPath,
   else {
     m_encodedTargetPhrases = new StringVector<unsigned char, unsigned long, MmapAllocator>();    
   }
+#else
+    m_encodedTargetPhrases = new StringVector<unsigned char, unsigned long, std::allocator>();    
+#endif
   EncodeTargetPhrases();
   
   cur_pass++;
@@ -130,6 +137,9 @@ PhraseTableCreator::PhraseTableCreator(std::string inPath,
   // 2nd pass
   std::cerr << "Pass " << cur_pass << "/" << all_passes << ": Compressing target phrases" << std::endl;
   
+#ifdef _MSC_VER
+  m_compressedTargetPhrases = new StringVector<unsigned char, unsigned long, std::allocator>();
+#else
   if(tempfilePath.size()) {
     MmapAllocator<unsigned char> allocCompressed(util::FMakeTemp(tempfilePath));
     m_compressedTargetPhrases = new StringVector<unsigned char, unsigned long, MmapAllocator>(allocCompressed);
@@ -137,6 +147,7 @@ PhraseTableCreator::PhraseTableCreator(std::string inPath,
   else {
     m_compressedTargetPhrases = new StringVector<unsigned char, unsigned long, MmapAllocator>();
   }
+#endif
   CompressTargetPhrases();
   
   std::cerr << "Saving to " << m_outPath << std::endl;

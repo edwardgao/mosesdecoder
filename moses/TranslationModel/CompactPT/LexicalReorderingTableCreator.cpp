@@ -51,7 +51,7 @@ LexicalReorderingTableCreator::LexicalReorderingTableCreator(
   std::cerr << "Pass 1/2: Creating phrase index + Counting scores" << std::endl;
   m_hash.BeginSave(m_outFile); 
 
-
+#ifndef _MSC_VER
   if(tempfilePath.size()) {
     MmapAllocator<unsigned char> allocEncoded(util::FMakeTemp(tempfilePath));
     m_encodedScores = new StringVector<unsigned char, unsigned long, MmapAllocator>(allocEncoded);
@@ -59,6 +59,9 @@ LexicalReorderingTableCreator::LexicalReorderingTableCreator(
   else {
     m_encodedScores = new StringVector<unsigned char, unsigned long, MmapAllocator>();
   }
+#else
+  m_encodedScores = new StringVector<unsigned char, unsigned long, std::allocator>();
+#endif
   
   EncodeScores();
   
@@ -67,7 +70,7 @@ LexicalReorderingTableCreator::LexicalReorderingTableCreator(
   
   std::cerr << "Pass 2/2: Compressing scores" << std::endl;
   
-  
+#ifndef _MSC_VER  
     if(tempfilePath.size()) {
     MmapAllocator<unsigned char> allocCompressed(util::FMakeTemp(tempfilePath));
     m_compressedScores = new StringVector<unsigned char, unsigned long, MmapAllocator>(allocCompressed);
@@ -75,6 +78,9 @@ LexicalReorderingTableCreator::LexicalReorderingTableCreator(
   else {
     m_compressedScores = new StringVector<unsigned char, unsigned long, MmapAllocator>();
   }
+#else
+  m_compressedScores = new StringVector<unsigned char, unsigned long, std::allocator>();
+#endif
   CompressScores();
   
   std::cerr << "Saving to " << m_outPath << std::endl;
@@ -417,10 +423,15 @@ size_t CompressionTaskReordering::m_scoresNum = 0;
 #ifdef WITH_THREADS
 boost::mutex CompressionTaskReordering::m_mutex;
 #endif
-
+#ifndef _MSC_VER
 CompressionTaskReordering::CompressionTaskReordering(StringVector<unsigned char, unsigned long,
                               MmapAllocator>& encodedScores,
                               LexicalReorderingTableCreator& creator)
+#else
+CompressionTaskReordering::CompressionTaskReordering(StringVector<unsigned char, unsigned long,
+                              std::allocator>& encodedScores,
+                              LexicalReorderingTableCreator& creator)
+#endif
   : m_encodedScores(encodedScores), m_creator(creator)
 { }
   

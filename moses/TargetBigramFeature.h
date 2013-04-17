@@ -52,6 +52,7 @@ public:
                                   ScoreComponentCollection* ) const
                                   {
                                     abort();
+									return 0;
                                   }
 private:
   FactorType m_factorType;

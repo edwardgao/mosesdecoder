@@ -47,8 +47,11 @@ class LexicalReorderingTableCompact: public LexicalReorderingTable
     
     typedef CanonicalHuffman<float> ScoreTree;  
     std::vector<ScoreTree*> m_scoreTrees;
-    
+#if (defined (WIN32) || defined (WIN64))    
+	StringVector<unsigned char, unsigned long, std::allocator>  m_scoresMapped;
+#else
     StringVector<unsigned char, unsigned long, MmapAllocator>  m_scoresMapped;
+#endif
     StringVector<unsigned char, unsigned long, std::allocator> m_scoresMemory;
 
     std::string MakeKey(const Phrase& f, const Phrase& e, const Phrase& c) const;

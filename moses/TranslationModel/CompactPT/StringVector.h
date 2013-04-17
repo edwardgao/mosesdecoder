@@ -486,13 +486,17 @@ const ValueT* StringVector<ValueT, PosT, Allocator>::value_ptr(PosT i) const
 template<typename ValueT, typename PosT, template <typename> class Allocator>
 typename std::vector<ValueT, Allocator<ValueT> >::const_iterator StringVector<ValueT, PosT, Allocator>::begin(PosT i) const
 {
+#ifdef _MSC_VER
+	return typename std::vector<ValueT, Allocator<ValueT> >::const_iterator(m_charArray[m_positions[i]].begin());
+#else
     return typename std::vector<ValueT, Allocator<ValueT> >::const_iterator(value_ptr(i));
+#endif
 }    
 
 template<typename ValueT, typename PosT, template <typename> class Allocator>
 typename std::vector<ValueT, Allocator<ValueT> >::const_iterator StringVector<ValueT, PosT, Allocator>::end(PosT i) const
 {
-    return typename std::vector<ValueT, Allocator<ValueT> >::const_iterator(value_ptr(i) + length(i));
+    return typename std::vector<ValueT, Allocator<ValueT> >::const_iterator(m_charArray[m_positions[i]].end());
 }    
 
 template<typename ValueT, typename PosT, template <typename> class Allocator>

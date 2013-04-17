@@ -24,7 +24,7 @@
 #include <iterator>
 #include <algorithm>
 #include <iostream>
-#include <numeric_limits>
+#include <limits>
 
 #include <sys/stat.h>
 #include <stdlib.h>
@@ -42,6 +42,7 @@
 #include "util/string_piece.hh"
 #include "util/tokenize_piece.hh"
 #include "util/double-conversion/double-conversion.h"
+
 
 using namespace std;
 
@@ -149,6 +150,11 @@ void ReformatHieroRule(const string &lineOrig, string &out)
   
   out = ret.str();
 }
+
+	#if (defined(WIN32) || defined(WIN64))
+		static const float INFINITY = std::numeric_limits<float>::infinity();
+		static const float NAN = std::numeric_limits<float>::quiet_NaN();
+	#endif
   
 bool RuleTableLoaderStandard::Load(FormatType format
                                 , const std::vector<FactorType> &input

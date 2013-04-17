@@ -20,6 +20,9 @@ template <class Output> class VertexGenerator {
   public:
     VertexGenerator(ContextBase &context, Vertex &gen, Output &nbest) : context_(context), gen_(gen), nbest_(nbest) {}
 
+	VertexGenerator(const ContextBase &context, const Vertex &gen, const Output &nbest) : context_(*const_cast<ContextBase *>(&context)), 
+		gen_(*const_cast<Vertex *>(&gen)), nbest_(*const_cast<Output *>(&nbest)) {}
+
     void NewHypothesis(PartialEdge partial) {
       nbest_.Add(existing_[hash_value(partial.CompletedState())], partial);
     }

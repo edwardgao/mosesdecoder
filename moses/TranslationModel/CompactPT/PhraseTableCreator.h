@@ -187,7 +187,9 @@ class PackedItem
 };
 
 bool operator<(const PackedItem &pi1, const PackedItem &pi2);
-
+#ifdef _MSC_VER
+#define MmapAllocator std::allocator
+#endif
 class PhraseTableCreator
 {
   public:

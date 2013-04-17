@@ -11,7 +11,13 @@
 
 namespace search {
 
-NBestList::NBestList(std::vector<PartialEdge> &partials, util::Pool &entry_pool, std::size_t keep) {
+	NBestList::NBestList(std::vector<PartialEdge> &partials, util::Pool &entry_pool, std::size_t keep)
+	{
+		init(partials, entry_pool, keep);
+	}
+
+
+  void NBestList::init(std::vector<PartialEdge> &partials, util::Pool &entry_pool, std::size_t keep) {
   assert(!partials.empty());
   std::vector<PartialEdge>::iterator end;
   if (partials.size() > keep) {
@@ -24,6 +30,12 @@ NBestList::NBestList(std::vector<PartialEdge> &partials, util::Pool &entry_pool,
     queue_.push(QueueEntry(entry_pool.Allocate(QueueEntry::Size(i->GetArity())), *i));
   }
 }
+
+NBestList::NBestList(const std::vector<PartialEdge> &partials, const util::Pool &entry_pool, const std::size_t keep) 
+{
+	init(*const_cast<std::vector<PartialEdge>*>(&partials),*const_cast<util::Pool*>(&entry_pool),  keep);
+}
+
 
 Score NBestList::TopAfterConstructor() const {
   assert(revealed_.empty());

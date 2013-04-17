@@ -35,6 +35,25 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 namespace Moses
 {
+
+#ifdef _MSC_VER
+	template <class T>
+    class MmapAllocator : public std::allocator<T>
+	{
+	public:
+		MmapAllocator(FILE* f)
+		{
+			std::cerr << "NOT IMPLEMENTED (MMAP)" << std::endl;
+			abort();
+		}
+
+		MmapAllocator(FILE* f, size_t pos)
+		{
+			std::cerr << "NOT IMPLEMENTED (MMAP)" << std::endl;
+			abort();
+		}
+	};
+#else
     template <class T>
     class MmapAllocator
     {
@@ -106,7 +125,13 @@ namespace Moses
         {
             if(m_data_ptr && *m_count == 0)
             {
-                munmap(m_data_ptr, m_map_size);
+#ifdef _MSC_VER
+
+				std::cerr << "NOT IMPLEMENTED ON WINDOWS (MMAP) " << std::endl;
+				abort();
+#else
+				munmap(m_data_ptr, m_map_size);
+#endif
                 if(!m_fixed && std::ftell(m_file_ptr) != -1)
                     std::fclose(m_file_ptr);
             }
@@ -214,10 +239,13 @@ namespace Moses
         return !(a1 == a2);    
     }
 
+#endif
+
 }
 
 #if (defined(WIN32) || defined(WIN64))
 #undef _SC_PAGE_SIZE
+
 #endif
 
 #endif

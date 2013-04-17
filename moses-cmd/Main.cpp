@@ -197,7 +197,9 @@ public:
 	string nbestFile = staticData.GetNBestFilePath();
 	if ( ! nbestFile.empty() && nbestFile!="-" && !boost::starts_with(nbestFile,"/dev/stdout") ) {
 	  boost::filesystem::path nbestPath(nbestFile);
-	  hypergraphDir = nbestPath.parent_path().filename().native();
+	  stringstream hypergraphDirName;
+	  hypergraphDirName << nbestPath.parent_path().filename();
+	  hypergraphDir = hypergraphDirName.str();
 	} else {
 	  stringstream hypergraphDirName;
 	  hypergraphDirName << boost::filesystem::current_path() << "/hypergraph";

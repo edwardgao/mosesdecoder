@@ -63,8 +63,11 @@ protected:
   
   BlockHashIndex m_hash;
   PhraseDecoder* m_phraseDecoder;
-  
+#ifndef _MSC_VER  
   StringVector<unsigned char, size_t, MmapAllocator>  m_targetPhrasesMapped;
+#else
+  StringVector<unsigned char, size_t, std::allocator>  m_targetPhrasesMapped;
+#endif
   StringVector<unsigned char, size_t, std::allocator> m_targetPhrasesMemory;
   
   const std::vector<FactorType>* m_input;

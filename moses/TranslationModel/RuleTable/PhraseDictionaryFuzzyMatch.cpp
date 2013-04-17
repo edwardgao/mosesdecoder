@@ -27,6 +27,10 @@
 #if (!defined(WIN32) && ! defined(WIN64))
 #include <unistd.h>
 #include <dirent.h>
+#else
+#include <Windows.h>
+#include <io.h>
+#include <string.h>
 #endif
 
 #include <fstream>
@@ -94,6 +98,8 @@ namespace Moses
   
   int removedirectoryrecursively(const char *dirname)
   {
+
+#ifndef _MSC_VER
     DIR *dir;
     struct dirent *entry;
     char path[PATH_MAX];
@@ -139,16 +145,39 @@ namespace Moses
      * printing here, see above) 
      */
     //printf("(not really) Deleting: %s\n", dirname);
-    
+#else
+	  std::cerr << "Remove dir not supposed" << std::endl;
+#endif
     return 1;
   }
 
   void PhraseDictionaryFuzzyMatch::InitializeForInput(InputType const& inputSentence)
   {
     char dirName[] = "/tmp/moses.XXXXXX";
+
+#ifdef _MSC_VER
+	char *temp = "tmpXXXXXX";
+	char name[9]; /* size of template including trailing nul */
+	int rez;
+	strcpy_s(name, sizeof(name), temp);
+	rez = _mktemp_s(name, sizeof(name));
+	char path[4096];
+	GetTempPath(4096,path);
+	std::string dirNameStr(path);
+	if (rez == 0) {
+		dirNameStr = dirNameStr+"/"+name +"/";
+		CreateDirectory(dirNameStr.c_str(), NULL);
+	}
+	else {
+		abort();
+	}
+	
+#else
     char *temp = mkdtemp(dirName);
     CHECK(temp);
-    string dirNameStr(dirName);
+	string dirNameStr(dirName);
+#endif
+    
     
     string inFileName(dirNameStr + "/in");
     

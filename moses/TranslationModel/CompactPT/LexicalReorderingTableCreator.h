@@ -52,9 +52,14 @@ class LexicalReorderingTableCreator {
     std::vector<ScoreCounter*> m_scoreCounters;
     std::vector<ScoreTree*> m_scoreTrees;
     
+#ifdef _MSC_VER
+    StringVector<unsigned char, unsigned long, std::allocator>* m_encodedScores;
+    StringVector<unsigned char, unsigned long, std::allocator>* m_compressedScores;
+
+#else
     StringVector<unsigned char, unsigned long, MmapAllocator>* m_encodedScores;
     StringVector<unsigned char, unsigned long, MmapAllocator>* m_compressedScores;
-    
+#endif    
     std::priority_queue<PackedItem> m_queue;
     long m_lastFlushedLine;
     long m_lastFlushedSourceNum;
@@ -127,12 +132,22 @@ class CompressionTaskReordering
     static boost::mutex m_mutex;
 #endif
     static size_t m_scoresNum;
+#ifndef _MSC_VER
     StringVector<unsigned char, unsigned long, MmapAllocator> &m_encodedScores;
+#else
+	StringVector<unsigned char, unsigned long, std::allocator> &m_encodedScores;
+#endif
     LexicalReorderingTableCreator &m_creator;
     
   public:
+
+#ifndef _MSC_VER
     CompressionTaskReordering(StringVector<unsigned char, unsigned long, MmapAllocator>&
                     m_encodedScores, LexicalReorderingTableCreator& creator);
+#else
+	  CompressionTaskReordering(StringVector<unsigned char, unsigned long, std::allocator>&
+                    m_encodedScores, LexicalReorderingTableCreator& creator);
+#endif
     void operator()();
 };
 

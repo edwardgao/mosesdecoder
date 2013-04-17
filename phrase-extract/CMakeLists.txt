@@ -132,6 +132,7 @@ TARGET_LINK_LIBRARIES (
     ken
     util
     search
+	lmert
     ${ZLIB_LIBRARIES}
     ${Boost_LIBRARIES}
    )

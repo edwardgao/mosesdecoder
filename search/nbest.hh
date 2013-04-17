@@ -32,9 +32,11 @@ class NBestList {
     };
     
     typedef GenericApplied<RevealedRef> QueueEntry;
-
+	 void init(std::vector<PartialEdge> &existing, util::Pool &entry_pool, std::size_t keep);
   public:
     NBestList(std::vector<PartialEdge> &existing, util::Pool &entry_pool, std::size_t keep);
+
+	NBestList(const std::vector<PartialEdge> &existing, const util::Pool &entry_pool, const std::size_t keep);
 
     Score TopAfterConstructor() const;
 

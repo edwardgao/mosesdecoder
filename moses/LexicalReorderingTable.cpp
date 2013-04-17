@@ -8,9 +8,7 @@
 #include "TargetPhrase.h"
 #include "TargetPhraseCollection.h"
 
-#ifndef WIN32
 #include "TranslationModel/CompactPT/LexicalReorderingTableCompact.h"  
-#endif
 
 namespace Moses
 {

@@ -7,14 +7,14 @@
 
 #include <iostream>
 #include <string>
-
-#if defined(__GLIBCXX__) || defined(__GLIBCPP__)
-#include <ext/stdio_filebuf.h>
-#endif
-#define BUFFER_SIZE (32768)
-
+#include <fstream>
 namespace MosesTuning 
 {
+#define BUFFER_SIZE (32768)
+#if defined(__GLIBCXX__) || defined(__GLIBCPP__)
+#include <ext/stdio_filebuf.h>
+
+
 
 class _fdstream
 {
@@ -162,7 +162,38 @@ public:
 private:
   std::ostream* _stream;
 };
+
+#else
+
+class ofdstream : public std::ofstream
+{
+public:
+	ofdstream(int file_descriptor)
+	{
+		std::cerr << "File_descriptor-based iostream not supported on this system " << std::endl;
+		abort();
+	}
+};
+
+class ifdstream : public std::ifstream
+{
+public:
+	ifdstream(int file_descriptor)
+	{
+		std::cerr << "File_descriptor-based iostream not supported on this system " << std::endl;
+		abort();
+	}
+public:
+	std::size_t getline(std::string& str)
+	{
+		char BUFFER[BUFFER_SIZE];
+		std::ifstream::getline(BUFFER, BUFFER_SIZE);
+		str = BUFFER;
+		return strlen(BUFFER);
+	}
+  
+};
+
+#endif
 }
-
-
 #endif // _FDSTREAM_

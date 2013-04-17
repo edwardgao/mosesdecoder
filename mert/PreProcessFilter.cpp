@@ -4,6 +4,13 @@
 #include <cstdlib>
 #if (! (defined(WIN32) || defined (WIN64)))
 #include <unistd.h>
+#else
+#include <io.h>
+#include <process.h>
+#define pipe _pipe
+#define pid_t _pid_t
+#define dup2 _dup2
+#define close _close
 #endif
 #include <csignal>
 
@@ -35,6 +42,8 @@ PreProcessFilter::PreProcessFilter(const string& filterCommand)
 {
     // Child error signal install
     // sigaction is the replacement for the traditional signal() method
+
+#if (!defined(WIN32) && !defined(WIN64))
     struct sigaction action;
     action.sa_handler = exec_failed;
     sigemptyset(&action.sa_mask);
@@ -54,7 +63,7 @@ PreProcessFilter::PreProcessFilter(const string& filterCommand)
     // We do this before the fork so both processes will know about
     // the same pipe and they can communicate.
 
-    pipe_status = pipe(pipefds_input);
+    pipe_status = _pipe(pipefds_input);
     if (pipe_status == -1)
     {
         perror("Error creating the pipe");
@@ -126,6 +135,9 @@ PreProcessFilter::PreProcessFilter(const string& filterCommand)
         perror("Error: fork failed");
         exit(EXIT_FAILURE);
     }
+#else
+	std::cerr << "Unsupported on Windows platform (PreProcessFilter)" << std::endl;
+#endif
 }
 
 string PreProcessFilter::ProcessSentence(const string& sentence)

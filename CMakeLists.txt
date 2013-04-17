@@ -94,7 +94,7 @@ set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 
 FIND_PACKAGE( Boost 1.46 COMPONENTS regex thread "program_options" filesystem
-    system unit_test_framework iostreams)
+    system unit_test_framework iostreams zlib)
 
 IF(Boost_FOUND)
     IF (NOT _boost_IN_CACHE)
@@ -109,6 +109,17 @@ ENDIF()
 
 # Configure and find ZLIB
 
+
+IF(WIN32)
+    #FIND_PACKAGE(ZLIB)
+    #IF(ZLIB_FOUND)
+    #INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIRS})
+	#don'e link ZLIB
+    #SET (ZLIB_LIBRARIES )
+    #ELSE()
+    #MESSAGE(FATAL_ERROR "ZLIB not found" )
+    #ENDIF (ZLIB_FOUND)
+ELSE()
 FIND_PACKAGE(ZLIB)
 
 IF(ZLIB_FOUND)
@@ -117,6 +128,7 @@ IF(ZLIB_FOUND)
 ELSE()
     MESSAGE(FATAL_ERROR "ZLIB not found" )
 ENDIF (ZLIB_FOUND)
+ENDIF()
 
 FIND_PACKAGE(BZip2)
 
