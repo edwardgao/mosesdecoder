@@ -79,7 +79,7 @@ namespace cindex{
 			l++;
 			split(lp,line,is_any_of(" \t"),token_compress_on);
 			if(lp.size()!=3){
-				P_WARN("Found and ignored a bad line (%d), content %s. ", l, line);
+				P_WARN("Found and ignored a bad line (%d), content %s. ", l, line.c_str());
 				continue;
 			}
 			double value = lexical_cast<float>(lp[2]);
