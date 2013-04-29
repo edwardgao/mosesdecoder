@@ -20,7 +20,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 ***********************************************************************/
 
 #pragma once
-
+#ifndef PHRASEDICTIONARY_NODE_SFC_H
+#define PHRASEDICTIONARY_NODE_SFC_H
 #include <map>
 #include <vector>
 #include <iterator>
@@ -163,3 +164,4 @@ public:
 std::ostream& operator<<(std::ostream&, const PhraseDictionaryNodeSCFG&);
 
 }
+#endif

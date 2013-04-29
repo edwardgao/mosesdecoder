@@ -26,7 +26,8 @@
 #include <cstdlib>
 
 #include <boost/functional/hash.hpp>
-
+#ifndef ALIGNMENTINFO_H__
+#define ALIGNMENTINFO_H__
 namespace Moses
 {
 
@@ -123,3 +124,5 @@ inline size_t hash_value(const AlignmentInfo& a) {
 }
 
 }
+
+#endif

@@ -18,7 +18,8 @@
 ***********************************************************************/
 
 #pragma once
-
+#ifndef UTRIENODE_H
+#define UTRIENODE_H
 #include "moses/NonTerminal.h"
 #include "moses/TargetPhrase.h"
 #include "moses/TargetPhraseCollection.h"
@@ -102,3 +103,4 @@ class UTrieNode
 };
 
 }  // namespace Moses
+#endif

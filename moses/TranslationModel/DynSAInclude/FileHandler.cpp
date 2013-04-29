@@ -1,3 +1,9 @@
+#ifdef _MSC_VER
+#pragma warning(disable : 4706)
+#pragma warning(disable : 4996)
+#pragma warning(disable : 4244)
+#endif
+
 #include "FileHandler.h"
 #include <stdio.h>
 
@@ -6,10 +12,6 @@
 #define pclose(A) _pclose(A)
 #endif
 
-#ifdef WIN32
-#define popen _popen
-#define pclose _pclose
-#endif
 
 namespace Moses
 {

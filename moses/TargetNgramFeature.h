@@ -12,6 +12,7 @@
 #include "LM/SingleFactor.h"
 #include "ChartHypothesis.h"
 #include "ChartManager.h"
+#include "AlignmentInfo.h"
 
 namespace Moses
 {

@@ -20,7 +20,8 @@
  ***********************************************************************/
 
 #pragma once
-
+#ifndef PHRASEDICTONDISK_H
+#define PHRASEDICTONDISK_H
 #include <map>
 #include <vector>
 #include <string>
@@ -86,3 +87,5 @@ public:
 };
 
 }  // namespace Moses
+
+#endif

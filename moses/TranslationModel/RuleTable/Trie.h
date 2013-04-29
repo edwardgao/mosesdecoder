@@ -25,6 +25,9 @@
 #include <string>
 #include <vector>
 
+#ifndef TRIE_H
+#define TRIE_H
+
 namespace Moses
 {
 
@@ -82,3 +85,6 @@ class RuleTableTrie : public PhraseDictionary
 };
 
 }  // namespace Moses
+
+#endif
+

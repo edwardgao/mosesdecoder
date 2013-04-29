@@ -26,7 +26,7 @@
 #elif !defined(_WIN32) && !defined(_WIN64)
 #include <arpa/nameser_compat.h>
 #endif 
-
+#pragma warning (disable: 4244)
 #include <stdint.h>
 
 #include <string.h>

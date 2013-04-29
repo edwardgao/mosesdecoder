@@ -1,5 +1,10 @@
 // $Id$
 //#include "beammain.h"
+#ifdef _MSC_VER
+#pragma warning(disable : 4706)
+#pragma warning(disable : 4996)
+#pragma warning(disable : 4244)
+#endif
 #include "domain.h"
 #include "tables-core.h"
 #include "InputFileStream.h"
@@ -85,7 +90,7 @@ void SubsetDomainFeature::add(const map<string,float>& domainCount,float count,
       bitmap += 1 << bit;
     }
   }
-  for(size_t i = 1; i < (1 << m_domain.list.size()); i++) {
+  for(size_t i = 1; i < (size_t)(1 << m_domain.list.size()); i++) {
     denseValues.push_back(maybeLog( (bitmap == i) ? 2.718 : 1 ));
   } 
 }
@@ -147,7 +152,7 @@ void IndicatorDomainFeature::add(const map<string,float>& domainCount,float coun
     if (dci == domainCount.end() ) {
       denseValues.push_back(maybeLog( 1 ));
     } else {
-      denseValues.push_back(maybeLog(2.718));
+      denseValues.push_back(maybeLog((float)2.718));
     }
   }
 

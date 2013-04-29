@@ -19,6 +19,8 @@
 
 #pragma once
 
+#ifndef DOTCHARTINMEMORY_H
+#define DOTCHARTINMEMORY_H
 #include "DotChart.h"
 #include "moses/TranslationModel/RuleTable/PhraseDictionaryNodeSCFG.h"
 
@@ -114,3 +116,5 @@ public:
 };
 
 }
+
+#endif

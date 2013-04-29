@@ -21,7 +21,8 @@
 
 #include "Trie.h"
 #include "UTrieNode.h"
-
+#ifndef UTRIE_H
+#define UTRIE_H
 namespace Moses
 {
 
@@ -41,6 +42,9 @@ class Word;
  * being a monolingual projection with target labels projected onto the source
  * side.)
  */
+
+
+
 class RuleTableUTrie : public RuleTableTrie
 {
  public:
@@ -65,3 +69,5 @@ class RuleTableUTrie : public RuleTableTrie
 };
 
 }  // namespace Moses
+
+#endif

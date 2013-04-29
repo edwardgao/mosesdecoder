@@ -1,3 +1,11 @@
+
+#ifdef _MSC_VER
+#pragma warning(disable : 4706)
+#pragma warning(disable : 4996)
+#pragma warning(disable : 4244)
+#pragma warning(disable : 4305)
+#endif
+
 #include "BleuScoreFeature.h"
 
 #include "StaticData.h"
@@ -142,7 +150,7 @@ void BleuScoreFeature::SetCurrShortestRefLength(size_t sent_id) {
 		// look for shortest reference
 		int shortestRef = -1;
 		for (size_t i = 0; i < (m_refs[sent_id].first).size(); ++i) {
-			if (shortestRef == -1 || (m_refs[sent_id].first)[i] < shortestRef)
+			if (shortestRef == -1 || (int)(m_refs[sent_id].first)[i] < shortestRef)
 				shortestRef = (m_refs[sent_id].first)[i];
 		}
 		m_cur_ref_length = shortestRef;
@@ -169,7 +177,7 @@ size_t BleuScoreFeature::GetShortestRefIndex(size_t ref_id) {
 		int shortestRef = -1;
 		size_t shortestRefIndex = 0;
 		for (size_t i = 0; i < (m_refs[ref_id].first).size(); ++i) {
-			if (shortestRef == -1 || (m_refs[ref_id].first)[i] < shortestRef) {
+			if (shortestRef == -1 || (int)(m_refs[ref_id].first)[i] < shortestRef) {
 				shortestRef = (m_refs[ref_id].first)[i];
 				shortestRefIndex = i;
 			}

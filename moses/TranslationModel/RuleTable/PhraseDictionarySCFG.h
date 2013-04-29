@@ -18,7 +18,8 @@
 ***********************************************************************/
 
 #pragma once
-
+#ifndef PHRASE_DICTIONARY_SCFG_H
+#define PHRASE_DICTIONARY_SCFG_H
 #include "moses/TranslationModel/PhraseDictionary.h"
 #include "moses/InputType.h"
 #include "moses/NonTerminal.h"
@@ -63,3 +64,4 @@ class PhraseDictionarySCFG : public RuleTableTrie
 };
 
 }  // namespace Moses
+#endif

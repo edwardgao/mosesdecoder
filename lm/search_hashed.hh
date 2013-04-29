@@ -102,7 +102,9 @@ template <class Value> class HashedSearch {
       return ret;
     }
 
+#ifdef GNU
 #pragma GCC diagnostic ignored "-Wuninitialized"
+#endif
     MiddlePointer Unpack(uint64_t extend_pointer, unsigned char extend_length, Node &node) const {
       node = extend_pointer;
       typename Middle::ConstIterator found;

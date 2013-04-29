@@ -38,6 +38,10 @@
 // low-level read and write functions
 #ifdef _MSC_VER
 # include <io.h>
+#pragma warning(push)
+#pragma warning(disable : 4706)
+#pragma warning(disable : 4996)
+#pragma warning(disable : 4244)
 #else
 # include <unistd.h>
 //extern "C" {
@@ -142,5 +146,7 @@ protected:
   }
 };
 //} // END namespace
-
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 #endif

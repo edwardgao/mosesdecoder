@@ -24,7 +24,7 @@
 #include <fstream>
 #include <boost/shared_ptr.hpp>
 #include "Vocab.h"
-
+#pragma warning (disable: 4244)
 namespace Moses
 {
 class Word;
