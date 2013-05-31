@@ -54,7 +54,8 @@ public:
   bool unpairedExtractFormat;
   bool conditionOnTargetLhs;
   bool boundaryRules;
-  
+  bool useSRL;
+
   RuleExtractionOptions()
     : maxSpan(10)
     , minHoleSource(2)

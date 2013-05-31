@@ -30,6 +30,9 @@
 #include "SentenceAlignment.h"
 #include "SyntaxTree.h"
 
+#include "srlinfo.h"
+#include "srlinfoparser.h"
+
 namespace MosesTraining
 {
 
@@ -38,6 +41,7 @@ class SentenceAlignmentWithSyntax : public SentenceAlignment
 public:
   SyntaxTree targetTree;
   SyntaxTree sourceTree;
+  srl::SRLInformation srlInformation;
   std::set<std::string> & m_targetLabelCollection;
   std::set<std::string> & m_sourceLabelCollection;
   std::map<std::string, int> & m_targetTopLabelCollection;
@@ -59,11 +63,15 @@ public:
   virtual ~SentenceAlignmentWithSyntax() {}
 
   bool
-  processTargetSentence(const char *, int, bool boundaryRules);
+  virtual processTargetSentence(const char *, int, bool boundaryRules);
 
   bool
-  processSourceSentence(const char *, int, bool boundaryRules);
+  virtual processSourceSentence(const char *, int, bool boundaryRules);
+
+
+
 };
+
 
 }
 

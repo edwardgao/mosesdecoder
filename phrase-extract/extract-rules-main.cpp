@@ -55,7 +55,7 @@ using namespace MosesTraining;
 typedef vector< int > LabelIndex;
 typedef map< int, int > WordIndex;
 
-class ExtractTask 
+class ExtractTask
 {
 private:
   SentenceAlignmentWithSyntax &m_sentence;
@@ -64,13 +64,13 @@ private:
   Moses::OutputFileStream& m_extractFileInv;
 
   vector< ExtractedRule > m_extractedRules;
-  
+
   // main functions
   void extractRules();
   void addRuleToCollection(ExtractedRule &rule);
   void consolidateRules();
   void writeRulesToFile();
-  
+
   // subs
   void addRule( int, int, int, int, int, RuleExist &ruleExist);
   void addHieroRule( int startT, int endT, int startS, int endS
@@ -86,7 +86,7 @@ private:
   void saveHieroAlignment(  int startT, int endT, int startS, int endS
                            , const WordIndex &indexS, const WordIndex &indexT, HoleCollection &holeColl, ExtractedRule &rule);
   void saveAllHieroPhrases( int startT, int endT, int startS, int endS, HoleCollection &holeColl, int countS);
-  
+
   inline string IntToString( int i )
   {
     stringstream out;
@@ -100,6 +100,8 @@ public:
     m_options(options),
     m_extractFile(extractFile),
     m_extractFileInv(extractFileInv) {}
+
+
   void Run();
 
 };
@@ -140,7 +142,7 @@ int main(int argc, char* argv[])
          << " | --UnpairedExtractFormat"
          << " | --ConditionOnTargetLHS ]"
         << " | --BoundaryRules[" << options.boundaryRules << "]";
-    
+
     exit(1);
   }
   char* &fileNameT = argv[1];
@@ -149,6 +151,7 @@ int main(int argc, char* argv[])
   string fileNameGlueGrammar;
   string fileNameUnknownWordLabel;
   string fileNameExtract = string(argv[4]);
+  string fileNameSRL = "";
 
   int optionInd = 5;
 
@@ -213,9 +216,14 @@ int main(int argc, char* argv[])
         exit(1);
       }
     }
+    else if (strcmp(argv[i],"--SRLInput") == 0) {
+      options.useSRL = true;
+      fileNameSRL = argv[++i];
+      }
+    }
     else if (strcmp(argv[i], "--GZOutput") == 0) {
-      options.gzOutput = true;  
-    } 
+      options.gzOutput = true;
+    }
     // allow consecutive non-terminals (X Y | X Y)
     else if (strcmp(argv[i],"--TargetSyntax") == 0) {
       options.targetSyntax = true;
@@ -265,7 +273,7 @@ int main(int argc, char* argv[])
       options.unpairedExtractFormat = true;
     } else if (strcmp(argv[i],"--ConditionOnTargetLHS") == 0) {
       options.conditionOnTargetLhs = true;
-    } else if (strcmp(argv[i],"-threads") == 0 || 
+    } else if (strcmp(argv[i],"-threads") == 0 ||
                strcmp(argv[i],"--threads") == 0 ||
                strcmp(argv[i],"--Threads") == 0) {
 #ifdef WITH_THREADS
@@ -299,6 +307,13 @@ int main(int argc, char* argv[])
   istream *sFileP = &sFile;
   istream *aFileP = &aFile;
 
+  Moses::InputFileStream* sFile = NULL;
+  istream *sFileP = NULL;
+
+  if(options.useSRL){
+      sFileP = sFile = new Moses::InputFileStream(fileNameSRL);
+  }
+
   // open output files
   string fileNameExtractInv = fileNameExtract + ".inv" + (options.gzOutput?".gz":"");
   Moses::OutputFileStream extractFile;
@@ -327,7 +342,7 @@ int main(int argc, char* argv[])
     SAFE_GETLINE((*aFileP), alignmentString, LINE_MAX_LENGTH, '\n', __FILE__);
 
     SentenceAlignmentWithSyntax sentence
-      (targetLabelCollection, sourceLabelCollection, 
+      (targetLabelCollection, sourceLabelCollection,
        targetTopLabelCollection, sourceTopLabelCollection, options);
     //az: output src, tgt, and alingment line
     if (options.onlyOutputSpanInfo) {
@@ -351,6 +366,12 @@ int main(int argc, char* argv[])
   tFile.Close();
   sFile.Close();
   aFile.Close();
+  if(sFile){
+      sFile->Close();
+      delete sFile;
+      sFileP = NULL;
+  }
+
   // only close if we actually opened it
   if (!options.onlyOutputSpanInfo) {
     extractFile.Close();
@@ -536,11 +557,11 @@ string ExtractTask::saveTargetHieroPhrase( int startT, int endT, int startS, int
       if (m_options.targetSyntax) {
         targetLabel = m_sentence.targetTree.GetNodes(currPos,hole.GetEnd(1))[labelI]->GetLabel();
       } else if (m_options.boundaryRules && (startS == 0 || endS == countS - 1)) {
-         targetLabel = "S"; 
+         targetLabel = "S";
       } else {
         targetLabel = "X";
       }
-      
+
       hole.SetLabel(targetLabel, 1);
 
       if (m_options.unpairedExtractFormat) {
@@ -636,13 +657,13 @@ void ExtractTask::saveHieroAlignment( int startT, int endT, int startS, int endS
   HoleList::const_iterator iterHole;
   for (iterHole = holeColl.GetHoles().begin(); iterHole != holeColl.GetHoles().end(); ++iterHole) {
     const Hole &hole = *iterHole;
-        
+
     std::string sourceSymbolIndex = IntToString(hole.GetPos(0));
     std::string targetSymbolIndex = IntToString(hole.GetPos(1));
     rule.alignment      += sourceSymbolIndex + "-" + targetSymbolIndex + " ";
     if (!m_options.onlyDirectFlag)
       rule.alignmentInv += targetSymbolIndex + "-" + sourceSymbolIndex + " ";
-  
+
     rule.SetSpanLength(hole.GetPos(0), hole.GetSize(0), hole.GetSize(1) ) ;
 
   }
@@ -880,12 +901,12 @@ void ExtractTask::addHieroRule( int startT, int endT, int startS, int endS
 void ExtractTask::addRule( int startT, int endT, int startS, int endS, int countS, RuleExist &ruleExist)
 {
   // contains only <s> or </s>. Don't output
-  if (m_options.boundaryRules 
-      && (   (startS == 0         && endS == 0) 
+  if (m_options.boundaryRules
+      && (   (startS == 0         && endS == 0)
           || (startS == countS-1  && endS == countS-1))) {
     return;
   }
-  
+
   if (m_options.onlyOutputSpanInfo) {
     cout << startS << " " << endS << " " << startT << " " << endT << endl;
     return;
@@ -901,7 +922,7 @@ void ExtractTask::addRule( int startT, int endT, int startS, int endS, int count
   else {
     sourceLabel = m_options.sourceSyntax ?
                   m_sentence.sourceTree.GetNodes(startS,endS)[0]->GetLabel() : "X";
-    
+
     if (m_options.targetSyntax) {
       targetLabel = m_sentence.targetTree.GetNodes(startT,endT)[0]->GetLabel();
     } else if (m_options.boundaryRules && (startS == 0 || endS == countS - 1)) {
@@ -1008,7 +1029,7 @@ void ExtractTask::writeRulesToFile()
         << rule->alignment << " ||| "
         << rule->count << " ||| ";
     if (m_options.outputNTLengths) {
-      rule->OutputNTLengths(out); 
+      rule->OutputNTLengths(out);
     }
     if (m_options.pcfgScore) {
       out << " ||| " << rule->pcfgScore;

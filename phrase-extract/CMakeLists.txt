@@ -23,6 +23,7 @@ ADD_LIBRARY(phex STATIC ${LIBPHEX_SRC})
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR} )
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/util )
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/lm )
+INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/srl/srlextract )
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/search )
 
 #set properties on the libraries
@@ -54,6 +55,7 @@ TARGET_LINK_LIBRARIES (
     extract-rules
     phex
     moseslib
+    srl_static
     ken
     util
     search

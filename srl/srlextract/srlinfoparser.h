@@ -9,12 +9,12 @@
 #define SRLINFOPARSER_H_
 
 
-
-namespace srl{
-
 #include<string>
 #include<vector>
 #include<iostream>
+
+namespace srl{
+
 
 
 class SRLInformation;
