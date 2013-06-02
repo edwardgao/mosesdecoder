@@ -219,8 +219,7 @@ int main(int argc, char* argv[])
     else if (strcmp(argv[i],"--SRLInput") == 0) {
       options.useSRL = true;
       fileNameSRL = argv[++i];
-      }
-    }
+	}
     else if (strcmp(argv[i], "--GZOutput") == 0) {
       options.gzOutput = true;
     }
@@ -307,11 +306,11 @@ int main(int argc, char* argv[])
   istream *sFileP = &sFile;
   istream *aFileP = &aFile;
 
-  Moses::InputFileStream* sFile = NULL;
-  istream *sFileP = NULL;
+  Moses::InputFileStream* srlFile = NULL;
+  istream *srlFileP = NULL;
 
   if(options.useSRL){
-      sFileP = sFile = new Moses::InputFileStream(fileNameSRL);
+      srlFileP = srlFile = new Moses::InputFileStream(fileNameSRL);
   }
 
   // open output files
@@ -366,10 +365,10 @@ int main(int argc, char* argv[])
   tFile.Close();
   sFile.Close();
   aFile.Close();
-  if(sFile){
-      sFile->Close();
-      delete sFile;
-      sFileP = NULL;
+  if(srlFile){
+      srlFile->Close();
+      delete srlFile;
+      srlFileP = NULL;
   }
 
   // only close if we actually opened it
@@ -999,7 +998,7 @@ void ExtractTask::consolidateRules()
 
   // compute fractional counts
   for(R rule = m_extractedRules.begin(); rule != m_extractedRules.end(); rule++ ) {
-    rule->count =    1.0/(float) (m_options.fractionalCounting ? spanCount[ rule->startT ][ rule->endT ][ rule->startS ][ rule->endS ] : 1.0 );
+    rule->count =    (float)1.0/(float) (m_options.fractionalCounting ? spanCount[ rule->startT ][ rule->endT ][ rule->startS ][ rule->endS ] : 1.0 );
   }
 
   // consolidate counts
