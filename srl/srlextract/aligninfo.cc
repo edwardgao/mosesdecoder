@@ -16,7 +16,7 @@ AlignmentInfoReader::AlignmentInfoReader(std::istream& english,
 	english_(english), french_(french), align_(align) {
 }
 
-tuple<bool, SentencePair, Alignment> AlignmentInfoReader::Read() {
+boost::tuple<bool, SentencePair, Alignment> AlignmentInfoReader::Read() {
 	string eng, fre, aln;
 	vector<string> idx;
 	SentencePair sent;
@@ -25,7 +25,7 @@ tuple<bool, SentencePair, Alignment> AlignmentInfoReader::Read() {
 	getline(french_, fre);
 	getline(align_, aln);
 	if (eng.length() == 0 || fre.length() == 0 || aln.length() == 0) {
-		return tuple<bool, SentencePair, Alignment> (false, sent,
+		return boost::tuple<bool, SentencePair, Alignment> (false, sent,
 				alignment);
 	}
 	trim(eng);
@@ -52,7 +52,7 @@ tuple<bool, SentencePair, Alignment> AlignmentInfoReader::Read() {
 		alignment.aligned_to_english_[eindex].insert(findex);
 		alignment.aligned_to_french_[findex].insert(eindex);
 	}
-	return tuple<bool, SentencePair, Alignment> (true, sent,
+	return boost::tuple<bool, SentencePair, Alignment> (true, sent,
 			alignment);
 }
 
