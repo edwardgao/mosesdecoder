@@ -88,6 +88,7 @@ public:
     , unpairedExtractFormat(false)
     , conditionOnTargetLhs(false)
     , boundaryRules(false)
+	, useSRL (false)
   {}
 };
 

@@ -141,6 +141,7 @@ int main(int argc, char* argv[])
 			<< " | --AllowOnlyUnalignedWords | --DisallowNonTermConsecTarget |--NonTermConsecSource |  --NoNonTermFirstWord | --NoFractionalCounting"
 			<< " | --UnpairedExtractFormat"
 			<< " | --ConditionOnTargetLHS ]"
+			<< " [ --SRLInput FILE ]"
 			<< " | --BoundaryRules[" << options.boundaryRules << "]";
 
 		exit(1);
@@ -216,7 +217,7 @@ int main(int argc, char* argv[])
 				exit(1);
 			}
 		}
-		else if (strcmp(argv[i],"--SRLInput") == 0) {
+		else if (strcmp(argv[i],"--SRLInput") == 0) { /// QIN: Read SRL input
 			options.useSRL = true;
 			fileNameSRL = argv[++i];
 		}
