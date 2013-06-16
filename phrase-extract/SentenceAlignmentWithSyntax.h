@@ -42,12 +42,15 @@ namespace MosesTraining
 	public:
 		SyntaxTree targetTree;
 		SyntaxTree sourceTree;
-		std::auto_ptr<std::vector<srl::SRLInformation> > srlInformation;
 		std::set<std::string> & m_targetLabelCollection;
 		std::set<std::string> & m_sourceLabelCollection;
 		std::map<std::string, int> & m_targetTopLabelCollection;
 		std::map<std::string, int> & m_sourceTopLabelCollection;
 		const RuleExtractionOptions & m_options;
+		
+		std::auto_ptr<std::vector<srl::SRLInformation> > srlInformation;
+		std::vector<std::vector<int> > srlSentMap, srlSentRevMap; // If no map, we cannot extract
+		
 
 		SentenceAlignmentWithSyntax(std::set<std::string> & tgtLabelColl,
 			std::set<std::string> & srcLabelColl,

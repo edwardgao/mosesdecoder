@@ -74,9 +74,17 @@ namespace MosesTraining
 		return true;
 	}
 
-	bool SentenceAlignmentWithSyntax::AlignSRLInformation(bool bSource)
-	{
-		return false;
+	bool SentenceAlignmentWithSyntax::AlignSRLInformation(bool bSource)	{
+		srlSentMap.clear();
+		srlSentRevMap.clear();
+		vector<string> &sent = bSource ? source: target;
+		srlSentMap.resize(srlInformation->size());
+		srlSentRevMap.resize(srlInformation->size());
+		bool result = false;
+		for(int it = 0 ; it < srlInformation->size() ; it++){
+			result = result || (*srlInformation)[it].MapIndices(sent, srlSentMap[it], &srlSentRevMap[it]); // At least one?
+		}
+		return result;
 	}
 
 } // namespace

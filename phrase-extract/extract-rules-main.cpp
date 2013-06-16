@@ -406,6 +406,11 @@ void ExtractTask::extractRules()
 	int countT = m_sentence.target.size();
 	int countS = m_sentence.source.size();
 
+	// Align sentence first
+	if(m_options.useSRL && m_sentence.srlInformation.get())	{
+		m_sentence.AlignSRLInformation(false);
+	}
+
 	// phrase repository for creating hiero phrases
 	RuleExist ruleExist(countT);
 
