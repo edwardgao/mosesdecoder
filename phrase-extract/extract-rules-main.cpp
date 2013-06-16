@@ -29,6 +29,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <sstream>
 #include <string>
 #include <vector>
+#include <memory>
 
 #ifdef WIN32
 // Include Visual Leak Detector
@@ -46,6 +47,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "XmlTree.h"
 #include "InputFileStream.h"
 #include "OutputFileStream.h"
+#include "srlinfoparser.h"
 
 #define LINE_MAX_LENGTH 500000
 
@@ -307,11 +309,12 @@ int main(int argc, char* argv[])
 	istream *sFileP = &sFile;
 	istream *aFileP = &aFile;
 
-	Moses::InputFileStream* srlFile = NULL;
-	istream *srlFileP = NULL;
+	auto_ptr<Moses::InputFileStream> srlFile ;
+	auto_ptr<srl::SRLInfoReader> srlReader;
 
 	if(options.useSRL){
-		srlFileP = srlFile = new Moses::InputFileStream(fileNameSRL);
+		srlFile.reset(new Moses::InputFileStream(fileNameSRL));
+		srlReader.reset(new srl::SRLInfoReader(*((istream*)srlFile.get())));
 	}
 
 	// open output files
@@ -353,8 +356,16 @@ int main(int argc, char* argv[])
 		}
 
 		if (sentence.create(targetString, sourceString, alignmentString,"", i, options.boundaryRules)) {
+			vector<srl::SRLInformation>* srlinfo = NULL;
+			if(options.useSRL){
+				srlReader->ReadSentence(i, srlinfo);
+				sentence.setSRLInformation(srlinfo);
+			}
 			if (options.unknownWordLabelFlag) {
 				collectWordLabelCounts(sentence);
+			}
+			if (options.useSRL)
+			{
 			}
 			ExtractTask *task = new ExtractTask(sentence, options, extractFile, extractFileInv);
 			task->Run();
@@ -366,10 +377,8 @@ int main(int argc, char* argv[])
 	tFile.Close();
 	sFile.Close();
 	aFile.Close();
-	if(srlFile){
+	if(srlFile.get()){
 		srlFile->Close();
-		delete srlFile;
-		srlFileP = NULL;
 	}
 
 	// only close if we actually opened it

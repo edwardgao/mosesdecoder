@@ -26,6 +26,13 @@ public:
 	inline const std::pair<int,int>& GetRegionAtIndex(size_t index) const {return regions_[index];};
 	inline int GetSentenceNumber() const{return sent_number_;};
 	inline bool error() const{return error_;};
+	/**!
+	Map the indices in the sentence to the sentence, return false if cannot map
+	the index_map will have the same length of the origin sentence, and each cell contains the index of corresponding word of the original word
+	on the SRL structure. If specified, reversed_map will be the same size as the SRL structure (GetNumberOfWords), and each cell contains the index 
+	of the original sentence's word
+	*/
+	bool MapIndices(const std::vector<std::string>& origin_sentence, std::vector<int>& index_map, std::vector<int>* reversed_map);
 
 
 	// Constructors
