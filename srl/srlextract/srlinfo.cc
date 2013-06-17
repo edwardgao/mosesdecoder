@@ -1,9 +1,11 @@
 #include <string>
 #include <vector>
+#include <list>
 #include <map>
 #include <boost/algorithm/string.hpp>
-#include <boost/unordered_map.hpp>
 #include <boost/thread.hpp>
+#include <boost/lexical_cast.hpp>
+#include <sstream>
 
 #include "srlinfo.h"
 
@@ -131,10 +133,12 @@ namespace srl {
 		return true;
 	}
 
+	unordered_map<string, TPredicateType> SRLFrame::id_map;
+
 	TPredicateType SRLFrame::MapPredicateName(std::string& pstr){
 		static boost::mutex scoped_mutex;
 		boost::mutex::scoped_lock(scoped_lock);
-		static unordered_map<string, TPredicateType> id_map;
+		
 		unordered_map<string, TPredicateType>::iterator it = id_map.find(pstr);
 		if(it!=id_map.end())
 			return it->second;
@@ -143,10 +147,12 @@ namespace srl {
 		return ret;
 	}
 
+
+	unordered_map<string, TArgumentType> SRLArgument::id_map;
+
 	TArgumentType SRLArgument::MapAugumentName(std::string& pstr){
 		static boost::mutex scoped_mutex;
 		boost::mutex::scoped_lock(scoped_lock);
-		static unordered_map<string, TArgumentType> id_map;
 		unordered_map<string, TArgumentType>::iterator it = id_map.find(pstr);
 		if(it!=id_map.end())
 			return it->second;
@@ -255,5 +261,90 @@ namespace srl {
 
 	string TagClassifier::MapToStandardName(const string& str) const{
 		return str.substr(3,str.length()-3);
+	}
+
+
+	string FramesToString(const TProvidedFramesForPhrases& srls){
+		stringstream ret;
+		for(int i = 0; i< srls.size() ; i++){
+			const SRLFrame &frame = srls[i];
+			ret << frame.PredicateName << " " << frame.PredicateIndex << " "
+				<< frame.PredicateLocation << " ";
+			for(int j = 0; j<frame.Arguments.size(); j++){
+				ret << frame.Arguments[j].ArgumentName << " " << frame.Arguments[j].ArgumentLocation<<" ";
+			}
+			ret << ",,,";
+		}
+		return ret.str();
+	}
+
+	void StringToFrame(const std::string str, TProvidedFramesForPhrases& srls){
+		list<string> tokens;
+		boost::split(tokens, str, boost::is_any_of(" "), boost::algorithm::token_compress_on);
+		int status = 0;
+		for(list<string>::iterator it = tokens.begin(); it!= tokens.end(); it++){
+			if(*it == ",,,"){
+				status = 0;
+				continue;
+			}
+			switch(status){
+			case 0:
+				srls.push_back(SRLFrame());
+				srls.back().PredicateName = lexical_cast<int>(*it);
+				status = 1;
+				break;
+			case 1:
+				srls.back().PredicateIndex = lexical_cast<int>(*it);
+				status = 2;
+				break;
+			case 2:
+				srls.back().PredicateLocation = (PredicatePlacement)lexical_cast<int>(*it);
+				status = 3;
+				break;
+			case 3:
+				srls.back().Arguments.push_back(SRLArgument());
+				srls.back().Arguments.back().ArgumentName = lexical_cast<int>(*it);
+				status = 4;
+				break;
+			case 4:
+				srls.back().Arguments.back().ArgumentLocation = (ArgumentPlacement)lexical_cast<int>(*it);
+				status = 3;
+				break;
+			}
+		}
+	}
+
+	template<class T>
+	void SaveMapToFile(ostream& ofs, const T& vmap){
+		for(T::const_iterator it = vmap.begin(); it!=vmap.end(); it++){
+			ofs << it->first << " " << it->second << endl;
+		}
+	}
+
+	template<class T>
+	bool LoadMapFromFile(istream& ifs, T& vmap){
+		string tag;
+		int id;
+		while(ifs){
+			ifs >> tag >> id;
+			vmap[tag] = id;
+		}
+		return true;
+	}
+
+	void SRLArgument::SaveMapping(std::ostream& ofs){
+		SaveMapToFile(ofs, id_map);
+	}
+
+	void SRLFrame::SaveMapping(std::ostream& ofs){
+		SaveMapToFile(ofs, id_map);
+	}
+
+	bool SRLArgument::LoadMapping(std::istream& ifs){
+		return LoadMapFromFile(ifs, id_map);
+	}
+
+	bool SRLFrame::LoadMapping(std::istream& ifs){
+		return LoadMapFromFile(ifs, id_map);
 	}
 }

@@ -13,6 +13,7 @@
 #include <set>
 #include <boost/thread.hpp>
 #include "porter_stemmer.h"
+#include <boost/unordered_map.hpp>
 
 namespace srl{
 	
@@ -111,6 +112,9 @@ namespace srl{
 	struct SRLArgument
 	{
 		static TArgumentType MapAugumentName(std::string& pstr);
+		static boost::unordered_map<std::string, TArgumentType> id_map;
+		static void SaveMapping(std::ostream& ofs);
+		static bool LoadMapping(std::istream& ifs);
 		ArgumentPlacement ArgumentLocation;
 		TArgumentType     ArgumentName;
 
@@ -120,6 +124,9 @@ namespace srl{
 	/// A single SRL Event for a phrase
 	struct SRLFrame{
 		static TPredicateType MapPredicateName(std::string& pstr);
+		static boost::unordered_map<std::string, TArgumentType> id_map;
+		static void SaveMapping(std::ostream& ofs);
+		static bool LoadMapping(std::istream& ifs);
 		TPredicateType PredicateName ; // The predicate name, no matter it is expected or provided
 		PredicatePlacement PredicateLocation ; // Whether the predicate has been provide, or expected in any location
 		int PredicateIndex; // Which word is the predicate. -1 if predicate is not provided by the terminals
@@ -158,6 +165,14 @@ namespace srl{
 			free_stemmer(stemmer);
 		}
 	};
+
+	/// Convert SRL frames to string representation
+	std::string FramesToString(const TProvidedFramesForPhrases& srls);
+
+	/// Convert SRL string representation to SRL frame
+	void StringToFrame(const std::string, TProvidedFramesForPhrases& srls);
+
+
 }
 
 #endif /* SRCHEADER_H_ */

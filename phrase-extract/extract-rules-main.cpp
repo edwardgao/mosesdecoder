@@ -66,6 +66,7 @@ private:
 	const RuleExtractionOptions &m_options;
 	Moses::OutputFileStream& m_extractFile;
 	Moses::OutputFileStream& m_extractFileInv;
+	auto_ptr<srl::SRLRuleExtractor> m_srlExtractor;
 
 	vector< ExtractedRule > m_extractedRules;
 
@@ -82,7 +83,7 @@ private:
 	void saveHieroPhrase( int startT, int endT, int startS, int endS
 		, HoleCollection &holeColl, LabelIndex &labelIndex, int countS);
 	string saveTargetHieroPhrase(  int startT, int endT, int startS, int endS
-		, WordIndex &indexT, HoleCollection &holeColl, const LabelIndex &labelIndex, double &logPCFGScore, int countS);
+		, WordIndex &indexT, HoleCollection &holeColl, const LabelIndex &labelIndex, double &logPCFGScore, int countS, srl::TProvidedFramesForPhrases* frames);
 	string saveSourceHieroPhrase( int startT, int endT, int startS, int endS
 		, HoleCollection &holeColl, const LabelIndex &labelIndex);
 	void preprocessSourceHieroPhrase( int startT, int endT, int startS, int endS
@@ -103,7 +104,11 @@ public:
 		m_sentence(sentence),
 		m_options(options),
 		m_extractFile(extractFile),
-		m_extractFileInv(extractFileInv) {}
+		m_extractFileInv(extractFileInv) {
+			if(m_options.useSRL){
+				m_srlExtractor.reset(new srl::SRLRuleExtractor);
+			}
+	}
 
 
 	void Run();
@@ -547,7 +552,7 @@ void ExtractTask::preprocessSourceHieroPhrase( int startT, int endT, int startS,
 
 string ExtractTask::saveTargetHieroPhrase( int startT, int endT, int startS, int endS
 										  , WordIndex &indexT, HoleCollection &holeColl, const LabelIndex &labelIndex, double &logPCFGScore
-										  , int countS)
+										  , int countS, srl::TProvidedFramesForPhrases* frames)
 {
 	HoleList::iterator iterHoleList = holeColl.GetHoles().begin();
 	assert(iterHoleList != holeColl.GetHoles().end());
@@ -555,6 +560,7 @@ string ExtractTask::saveTargetHieroPhrase( int startT, int endT, int startS, int
 	string out = "";
 	int outPos = 0;
 	int holeCount = 0;
+	vector<pair<int,int> > holes_forsrl;
 	for(int currPos = startT; currPos <= endT; currPos++) {
 		bool isHole = false;
 		if (iterHoleList != holeColl.GetHoles().end()) {
@@ -592,6 +598,8 @@ string ExtractTask::saveTargetHieroPhrase( int startT, int endT, int startS, int
 			}
 
 			currPos = hole.GetEnd(1);
+			if(m_options.useSRL)
+				holes_forsrl.push_back(make_pair(hole.GetStart(1), hole.GetEnd(1)));
 			hole.SetPos(outPos, 1);
 			++iterHoleList;
 			holeCount++;
@@ -601,6 +609,16 @@ string ExtractTask::saveTargetHieroPhrase( int startT, int endT, int startS, int
 		}
 
 		outPos++;
+	}
+
+	if(frames && m_options.useSRL){
+		frames->clear();
+		if(m_sentence.srlInformation.get()){
+			vector<srl::SRLInformation> & srlinfo = *(m_sentence.srlInformation.get());
+			for(int j = 0; j < srlinfo.size(); j++){
+				frames->push_back(m_srlExtractor->ExtractSRLInfo(srlinfo[j],m_sentence.srlSentMap[j], m_sentence.srlSentRevMap[j], holes_forsrl,startT, endT));
+			}
+		}
 	}
 
 	assert(iterHoleList == holeColl.GetHoles().end());
@@ -698,6 +716,11 @@ void ExtractTask::saveHieroPhrase( int startT, int endT, int startS, int endS
 
 	ExtractedRule rule( startT, endT, startS, endS );
 
+	auto_ptr<srl::TProvidedFramesForPhrases> frames ;
+
+	if(m_options.useSRL)
+		frames.reset(new vector<srl::SRLFrame>());
+
 	// phrase labels
 	string targetLabel;
 	if (m_options.targetSyntax) {
@@ -717,12 +740,12 @@ void ExtractTask::saveHieroPhrase( int startT, int endT, int startS, int endS
 	// target
 	if (m_options.pcfgScore) {
 		double logPCFGScore = m_sentence.targetTree.GetNodes(startT,endT)[labelIndex[0]]->GetPcfgScore();
-		rule.target = saveTargetHieroPhrase(startT, endT, startS, endS, indexT, holeColl, labelIndex, logPCFGScore, countS)
+		rule.target = saveTargetHieroPhrase(startT, endT, startS, endS, indexT, holeColl, labelIndex, logPCFGScore, countS, frames.get())
 			+ " [" + targetLabel + "]";
 		rule.pcfgScore = std::exp(logPCFGScore);
 	} else {
 		double logPCFGScore = 0.0f;
-		rule.target = saveTargetHieroPhrase(startT, endT, startS, endS, indexT, holeColl, labelIndex, logPCFGScore, countS)
+		rule.target = saveTargetHieroPhrase(startT, endT, startS, endS, indexT, holeColl, labelIndex, logPCFGScore, countS, frames.get())
 			+ " [" + targetLabel + "]";
 	}
 
@@ -736,6 +759,10 @@ void ExtractTask::saveHieroPhrase( int startT, int endT, int startS, int endS
 
 	// alignment
 	saveHieroAlignment(startT, endT, startS, endS, indexS, indexT, holeColl, rule);
+
+	// If use alignment, save alignment
+	if(frames.get() && frames->size())
+		rule.srlInfo = FramesToString(*frames.get());
 
 	addRuleToCollection( rule );
 }
@@ -1051,14 +1078,21 @@ void ExtractTask::writeRulesToFile()
 		if (m_options.pcfgScore) {
 			out << " ||| " << rule->pcfgScore;
 		}
+
+		if (m_options.useSRL)
+			out << " ||| " << rule->srlInfo;
+
 		out << "\n";
 
 		if (!m_options.onlyDirectFlag) {
 			outInv << rule->target << " ||| "
 				<< rule->source << " ||| "
 				<< rule->alignmentInv << " ||| "
-				<< rule->count << "\n";
-		}
+				<< rule->count ;
+			if (m_options.useSRL)
+				outInv << " ||| " << rule->srlInfo;
+			outInv << "\n";
+		}		
 	}
 	m_extractFile << out.str();
 	m_extractFileInv << outInv.str();

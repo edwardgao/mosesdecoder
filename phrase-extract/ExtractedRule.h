@@ -41,6 +41,7 @@ public:
   std::string alignmentInv;
   std::string orientation;
   std::string orientationForward;
+  std::string srlInfo;
   int startT;
   int endT;
   int startS;
