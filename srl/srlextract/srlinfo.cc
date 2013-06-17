@@ -1,8 +1,8 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <hash_map>
 #include <boost/algorithm/string.hpp>
+#include <boost/unordered_map.hpp>
 #include <boost/thread.hpp>
 
 #include "srlinfo.h"
@@ -10,6 +10,7 @@
 namespace srl {
 
 	using namespace std;
+    using namespace boost;
 
 	SRLInformation::SRLInformation() {
 		error_ = false;
@@ -133,8 +134,8 @@ namespace srl {
 	TPredicateType SRLFrame::MapPredicateName(std::string& pstr){
 		static boost::mutex scoped_mutex;
 		boost::mutex::scoped_lock(scoped_lock);
-		static hash_map<string, TPredicateType> id_map;
-		auto it = id_map.find(pstr);
+		static unordered_map<string, TPredicateType> id_map;
+		unordered_map<string, TPredicateType>::iterator it = id_map.find(pstr);
 		if(it!=id_map.end())
 			return it->second;
 		TPredicateType ret ;
@@ -145,8 +146,8 @@ namespace srl {
 	TArgumentType SRLArgument::MapAugumentName(std::string& pstr){
 		static boost::mutex scoped_mutex;
 		boost::mutex::scoped_lock(scoped_lock);
-		static hash_map<string, TArgumentType> id_map;
-		auto it = id_map.find(pstr);
+		static unordered_map<string, TArgumentType> id_map;
+		unordered_map<string, TArgumentType>::iterator it = id_map.find(pstr);
 		if(it!=id_map.end())
 			return it->second;
 		TArgumentType ret ;
@@ -186,7 +187,7 @@ namespace srl {
 			set<int> regions = srlInfo.GetRegionCoveringWords(rStart, rEnd);
 			bool predicate_provide = false;
 
-			for(auto i = regions.begin() ; i != regions.end(); i++){
+			for(set<int>::iterator i = regions.begin() ; i != regions.end(); i++){
 				const pair<int, int>& region = srlInfo.GetRegionAtIndex(*i);
 				const string& tag = srlInfo.GetLabelAtIndex(*i);
 				if(cls.IsPredicate(tag)){ // Predicate
