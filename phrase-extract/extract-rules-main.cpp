@@ -59,7 +59,9 @@ typedef map< int, int > WordIndex;
 
 class ExtractTask
 {
+	friend class SRLRuleExtractor; // Make it easy and not messing up this already long source file
 private:
+
 	SentenceAlignmentWithSyntax &m_sentence;
 	const RuleExtractionOptions &m_options;
 	Moses::OutputFileStream& m_extractFile;
@@ -688,6 +690,7 @@ void ExtractTask::saveHieroAlignment( int startT, int endT, int startS, int endS
 	}
 }
 
+/// By this point we have got Hiero phrases, if we have SRL label, we want to append them too
 void ExtractTask::saveHieroPhrase( int startT, int endT, int startS, int endS
 								  , HoleCollection &holeColl, LabelIndex &labelIndex, int countS)
 {

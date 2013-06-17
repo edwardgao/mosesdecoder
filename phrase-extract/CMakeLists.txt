@@ -22,6 +22,7 @@ SET(LIBPHEX_SRC
 ADD_LIBRARY(phex STATIC ${LIBPHEX_SRC})
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR} )
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/util )
+INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/srl/utils )
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/lm )
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/srl/srlextract )
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/search )
@@ -44,6 +45,7 @@ TARGET_LINK_LIBRARIES (
     moseslib
     ken
     util
+    utils
     search
     ${ZLIB_LIBRARIES}
     ${Boost_LIBRARIES}
@@ -58,6 +60,7 @@ TARGET_LINK_LIBRARIES (
     srl_static
     ken
     util
+    utils
     search
     ${ZLIB_LIBRARIES}
     ${Boost_LIBRARIES}
@@ -70,6 +73,7 @@ TARGET_LINK_LIBRARIES (
     moseslib
     ken
     util
+    utils
     search
     ${ZLIB_LIBRARIES}
     ${Boost_LIBRARIES}
@@ -82,6 +86,7 @@ TARGET_LINK_LIBRARIES (
     moseslib
     ken
     util
+    utils
     search
     ${ZLIB_LIBRARIES}
     ${Boost_LIBRARIES}
@@ -94,6 +99,7 @@ TARGET_LINK_LIBRARIES (
     moseslib
     ken
     util
+    utils
     search
     ${ZLIB_LIBRARIES}
     ${Boost_LIBRARIES}
@@ -107,6 +113,7 @@ TARGET_LINK_LIBRARIES (
     moseslib
     ken
     util
+    utils
     search
     ${ZLIB_LIBRARIES}
     ${Boost_LIBRARIES}
@@ -120,6 +127,7 @@ TARGET_LINK_LIBRARIES (
     moseslib
     ken
     util
+    utils
     search
     ${ZLIB_LIBRARIES}
     ${Boost_LIBRARIES}
@@ -133,6 +141,7 @@ TARGET_LINK_LIBRARIES (
     moseslib
     ken
     util
+    utils
     search
 	lmert
     ${ZLIB_LIBRARIES}
@@ -147,6 +156,7 @@ TARGET_LINK_LIBRARIES (
     moseslib
     ken
     util
+    utils
     search
     ${ZLIB_LIBRARIES}
     ${Boost_LIBRARIES}
