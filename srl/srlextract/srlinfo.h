@@ -46,7 +46,8 @@ namespace srl{
 		on the SRL structure. If specified, reversed_map will be the same size as the SRL structure (GetNumberOfWords), and each cell contains the index 
 		of the original sentence's word
 		*/
-		bool MapIndices(const std::vector<std::string>& origin_sentence, std::vector<int>& index_map, std::vector<int>* reversed_map);
+		bool MapIndices_conserv(const std::vector<std::string>& origin_sentence, std::vector<int>& index_map, std::vector<int>& reversed_map);
+		bool MapIndices(const std::vector<std::string>& origin_sentence, std::vector<int>& index_map, std::vector<int>& reversed_map, bool bConservative = false);
 
 		int GetRegionCoveringWord(int word_index);
 		std::set<int> GetRegionCoveringWords(int start, int end);
@@ -146,7 +147,7 @@ namespace srl{
 		NOTE: All indices are INCLUSIVE
 		*/
 		SRLFrame ExtractSRLInfo(SRLInformation &srlInfo, 
-			const std::vector<int>& indexMap, const std::vector<int>& indexRevMap, const std::vector<std::pair<int, int> >& HolesInclusive, 
+			const std::vector<int>& indexMap, const std::vector<int>& indexRevMap, const std::vector<std::pair<int, int> >* HolesInclusive, 
 			int start, int end, const TagClassifier& tagclassifier = TagClassifier::Instance, bool lc = true, bool stem = false);
 
 	private:

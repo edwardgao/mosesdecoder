@@ -82,7 +82,7 @@ namespace MosesTraining
 		srlSentRevMap.resize(srlInformation->size());
 		bool result = false;
 		for(int it = 0 ; it < srlInformation->size() ; it++){
-			result = result || (*srlInformation)[it].MapIndices(sent, srlSentMap[it], &srlSentRevMap[it]); // At least one?
+			result =  (*srlInformation)[it].MapIndices(sent, srlSentMap[it], srlSentRevMap[it]) || result; // At least one?
 		}
 		return result;
 	}

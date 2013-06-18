@@ -151,6 +151,7 @@ int main(int argc, char* argv[])
 			<< " | --UnpairedExtractFormat"
 			<< " | --ConditionOnTargetLHS ]"
 			<< " [ --SRLInput FILE ]"
+			<< " [ --SRLMapFile File ]"
 			<< " | --BoundaryRules[" << options.boundaryRules << "]";
 
 		exit(1);
@@ -162,6 +163,7 @@ int main(int argc, char* argv[])
 	string fileNameUnknownWordLabel;
 	string fileNameExtract = string(argv[4]);
 	string fileNameSRL = "";
+	string fileNameSRLMap = "";
 
 	int optionInd = 5;
 
@@ -229,6 +231,9 @@ int main(int argc, char* argv[])
 		else if (strcmp(argv[i],"--SRLInput") == 0) { /// QIN: Read SRL input
 			options.useSRL = true;
 			fileNameSRL = argv[++i];
+		}
+		else if (strcmp(argv[i],"--SRLMapFile") == 0) { /// QIN: SRLIdMap file prefix
+			fileNameSRLMap = argv[++i];
 		}
 		else if (strcmp(argv[i], "--GZOutput") == 0) {
 			options.gzOutput = true;
@@ -399,6 +404,15 @@ int main(int argc, char* argv[])
 
 	if (options.unknownWordLabelFlag)
 		writeUnknownWordLabel(fileNameUnknownWordLabel);
+
+	if(options.useSRL && fileNameSRLMap.length()){
+		string predFile = fileNameSRLMap + ".pred";
+		string argFile = fileNameSRLMap + ".arg";
+		ofstream predfile(predFile);
+		srl::SRLFrame::SaveMapping(predfile);
+		ofstream argfile(argFile);
+		srl::SRLArgument::SaveMapping(argfile);
+	}
 }
 
 void ExtractTask::Run() {
@@ -616,7 +630,9 @@ string ExtractTask::saveTargetHieroPhrase( int startT, int endT, int startS, int
 		if(m_sentence.srlInformation.get()){
 			vector<srl::SRLInformation> & srlinfo = *(m_sentence.srlInformation.get());
 			for(int j = 0; j < srlinfo.size(); j++){
-				frames->push_back(m_srlExtractor->ExtractSRLInfo(srlinfo[j],m_sentence.srlSentMap[j], m_sentence.srlSentRevMap[j], holes_forsrl,startT, endT));
+				srl::SRLFrame nframe = m_srlExtractor->ExtractSRLInfo(srlinfo[j],m_sentence.srlSentMap[j], m_sentence.srlSentRevMap[j], &holes_forsrl,startT, endT);
+				if(nframe.PredicateLocation != srl::PP_INVALID_PLACEMENT)
+					frames->push_back(nframe);
 			}
 		}
 	}
@@ -1008,6 +1024,19 @@ void ExtractTask::addRule( int startT, int endT, int startS, int endS, int count
 	rule.alignment.erase(rule.alignment.size()-1);
 	if (!m_options.onlyDirectFlag)
 		rule.alignmentInv.erase(rule.alignmentInv.size()-1);
+	
+	if(m_options.useSRL){
+		vector<srl::SRLFrame> frames;
+		if(m_sentence.srlInformation.get()){
+			vector<srl::SRLInformation> & srlinfo = *(m_sentence.srlInformation.get());
+			for(int j = 0; j < srlinfo.size(); j++){
+				srl::SRLFrame nframe = m_srlExtractor->ExtractSRLInfo(srlinfo[j],m_sentence.srlSentMap[j], m_sentence.srlSentRevMap[j], NULL,startT, endT);
+				if(nframe.PredicateLocation != srl::PP_INVALID_PLACEMENT)
+					frames.push_back(nframe);
+			}
+		}
+		rule.srlInfo = srl::FramesToString(frames);
+	}
 
 	addRuleToCollection( rule );
 }

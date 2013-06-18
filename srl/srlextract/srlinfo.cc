@@ -6,6 +6,7 @@
 #include <boost/thread.hpp>
 #include <boost/lexical_cast.hpp>
 #include <sstream>
+#include "stringalgo.hh"
 
 #include "srlinfo.h"
 
@@ -38,7 +39,7 @@ namespace srl {
 		}else{// Rebuild
 			word_to_region_map_.resize(words_.size(),-1);
 			for(int i=0; i< regions_.size(); i++){
-				for(int j = regions_[i].first; j<= regions_[i].second; j++){
+				for(int j = regions_[i].first; j< regions_[i].second; j++){ // The region, however is not inclusive, what a mess
 					word_to_region_map_[j] = i;
 				}
 			}
@@ -68,7 +69,27 @@ namespace srl {
 		return predicate_index;
 	}
 
-	bool SRLInformation::MapIndices(const vector<std::string>& origin_sentence, vector<int>& index_map, vector<int>* reversed_map){
+	bool SRLInformation::MapIndices(const vector<std::string>& origin_sentence, vector<int>& index_map, vector<int>& reversed_map, bool conservative){
+		if(conservative)
+			return MapIndices_conserv(origin_sentence, index_map, reversed_map);
+		else // Just do string distance
+		{
+			vector<string> sentlc, srlsentlc;		
+			int nwordori = origin_sentence.size();
+			int nwordsrl = (int) GetNumberOfWords();
+			sentlc.resize(nwordori);
+			srlsentlc.resize(nwordsrl);
+			for(int i=0; i< nwordori; i++)
+				sentlc[i] = boost::to_lower_copy(origin_sentence[i]);
+			for(int j=0; j<nwordsrl;j++){
+				srlsentlc[j] = boost::to_lower_copy(GetWordAtIndex(j));			
+			}
+			levenshtein_distance(srlsentlc, sentlc, reversed_map,index_map);
+			
+		}
+	}
+
+	bool SRLInformation::MapIndices_conserv(const vector<std::string>& origin_sentence, vector<int>& index_map, vector<int>& reversed_map){
 		//cerr << "SRLSize" << srl.size();
 		vector<string> sentlc, srlsentlc;		
 		int nwordori = origin_sentence.size();
@@ -83,18 +104,16 @@ namespace srl {
 		int j,k=0;
 		index_map.clear();
 		index_map.resize(nwordori,-1);
-		if(reversed_map){
-			reversed_map->clear();
-			reversed_map->resize(nwordsrl,-1);
-		}
+		reversed_map.clear();
+		reversed_map.resize(nwordsrl,-1);
+		
 
 		for(j =0; j< nwordsrl && k < nwordori; j++,k++){
 			int orik= k;
 			while(k<nwordori){
 				if(srlsentlc[j] == sentlc[k]){
 					index_map[k] = j;
-					if(reversed_map)
-						(*reversed_map)[j] = k;
+					reversed_map[j] = k;
 					break;
 				}
 				k++;
@@ -113,8 +132,7 @@ namespace srl {
 					if(sword == sentlc[orik]){
 						index_map[orik] = orj;
 						for(int l = orj; l <= j; l++){
-							if(reversed_map)
-								(*reversed_map)[l] = orik;
+							reversed_map[l] = orik;
 						}
 						k = orik;
 						break;
@@ -164,7 +182,7 @@ namespace srl {
 	string SRLRuleExtractor::GetRep(SRLInformation &srlInfo, const pair<int,int>& region, bool lc, bool stemming)
 	{
 		string fullrep;
-		for(int j = region.first; j<=region.second; j++){
+		for(int j = region.first; j<region.second; j++){
 			if(j>region.first)
 				fullrep+="_";
 			if(stem)
@@ -178,14 +196,32 @@ namespace srl {
 	}
 
 	SRLFrame SRLRuleExtractor::ExtractSRLInfo(SRLInformation &srlInfo, 
-		const std::vector<int>& indexMap, const std::vector<int>& indexRevMap, const std::vector<std::pair<int, int> >& HolesInclusive, 
+		const std::vector<int>& indexMap, const std::vector<int>& indexRevMap, const std::vector<std::pair<int, int> >* HolesInclusive, 
 		int start, int end, const TagClassifier& cls, bool lc, bool stem)	{
 			SRLFrame ret ;
-			int rStart, rEnd;
+			int rStart = -1, rEnd = -1;
 			// Map the indexes
-			if(indexMap.size() <= start || indexMap.size() <= end || indexMap[start] == -1 || indexMap[end] == -1)		{
-				cerr << "[WARNING] No map found";
+			if(indexMap.size() <= start || indexMap.size() <= end ){
+				cerr << "[WARNING] No map found\n";
 				return ret; 
+			}else if(indexMap[start] == -1 || indexMap[end] == -1){
+				int i;
+				for(i = start; i <= end; i++){
+					if(indexMap[i] != -1){
+						rStart = indexMap[i];
+						break;
+					}
+				}
+				for(int j = end; j >= i; j--){
+					if(indexMap[j] != -1){
+						rEnd = indexMap[j];
+						break;
+					}
+				}
+				if(rStart == -1){
+					cerr << "[WARNING] No map found\n";
+					return ret;
+				}
 			}else{
 				rStart = indexMap[start];
 				rEnd = indexMap[end];
@@ -201,10 +237,12 @@ namespace srl {
 					predicate_provide = true;
 					// Is it in the hole?
 					int predicate_in_hole = -1;
-					for(int j = 0; j < HolesInclusive.size() ; j++){
-						if(region.second <= HolesInclusive[j].second && region.first>= HolesInclusive[j].first){
-							predicate_in_hole = j;
-							break;
+					if(HolesInclusive){
+						for(int j = 0; j < HolesInclusive->size() ; j++){
+							if(region.second <= (*HolesInclusive)[j].second && region.first>= (*HolesInclusive)[j].first){
+								predicate_in_hole = j;
+								break;
+							}
 						}
 					}
 					ret.PredicateIndex = predicate_in_hole < 0 ? indexRevMap[region.first] - start : -1; // Relative index, in original phrase
@@ -221,9 +259,11 @@ namespace srl {
 						arg.ArgumentLocation = (ArgumentPlacement) (arg.ArgumentLocation | AP_LEFT_COMPLETE);
 					if(region.second>= rEnd)
 						arg.ArgumentLocation = (ArgumentPlacement) (arg.ArgumentLocation | AP_RIGHT_COMPLETE);
-					for(int j = 0; j < HolesInclusive.size() ; j++){
-						if(region.second <= HolesInclusive[j].second && region.first>= HolesInclusive[j].first){
-							arg.ArgumentLocation = SetHoleNonterminalIndex(arg.ArgumentLocation, j);
+					if(HolesInclusive){
+						for(int j = 0; j < HolesInclusive->size() ; j++){
+							if(region.second <= (*HolesInclusive)[j].second && region.first>= (*HolesInclusive)[j].first){
+								arg.ArgumentLocation = SetHoleNonterminalIndex(arg.ArgumentLocation, j);
+							}
 						}
 					}
 				}
@@ -273,7 +313,8 @@ namespace srl {
 			for(int j = 0; j<frame.Arguments.size(); j++){
 				ret << frame.Arguments[j].ArgumentName << " " << frame.Arguments[j].ArgumentLocation<<" ";
 			}
-			ret << ",,,";
+			if(i<srls.size()-1)
+				ret << ",,, ";
 		}
 		return ret.str();
 	}
@@ -316,8 +357,12 @@ namespace srl {
 
 	template<class T>
 	void SaveMapToFile(ostream& ofs, const T& vmap){
+		map<int, string> revMap;
 		for(T::const_iterator it = vmap.begin(); it!=vmap.end(); it++){
-			ofs << it->first << " " << it->second << endl;
+			revMap[it->second] = it->first;
+		}
+		for(map<int, string>::iterator it = revMap.begin(); it!=revMap.end(); it++){
+			ofs << it->second << " " << it->first << endl;
 		}
 	}
 
