@@ -355,10 +355,10 @@ namespace srl {
 		}
 	}
 
-	template<class T>
+	template<typename T>
 	void SaveMapToFile(ostream& ofs, const T& vmap){
 		map<int, string> revMap;
-		for(T::const_iterator it = vmap.begin(); it!=vmap.end(); it++){
+		for(typename T::const_iterator it = vmap.begin(); it!=vmap.end(); it++){
 			revMap[it->second] = it->first;
 		}
 		for(map<int, string>::iterator it = revMap.begin(); it!=revMap.end(); it++){
@@ -366,7 +366,7 @@ namespace srl {
 		}
 	}
 
-	template<class T>
+	template<typename T>
 	bool LoadMapFromFile(istream& ifs, T& vmap){
 		string tag;
 		int id;

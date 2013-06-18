@@ -408,9 +408,9 @@ int main(int argc, char* argv[])
 	if(options.useSRL && fileNameSRLMap.length()){
 		string predFile = fileNameSRLMap + ".pred";
 		string argFile = fileNameSRLMap + ".arg";
-		ofstream predfile(predFile);
+		ofstream predfile(predFile.c_str());
 		srl::SRLFrame::SaveMapping(predfile);
-		ofstream argfile(argFile);
+		ofstream argfile(argFile.c_str());
 		srl::SRLArgument::SaveMapping(argfile);
 	}
 }
