@@ -16,6 +16,8 @@ SET( LIBSRL_SRC
  srlinfoparser.h
  srlruleset.cc
  srlruleset.h
+ srlmodel.cpp
+ srlmodel.h
 )
 
 ADD_LIBRARY(srl_static STATIC ${LIBSRL_SRC})

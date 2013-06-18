@@ -1109,7 +1109,7 @@ void ExtractTask::writeRulesToFile()
 		}
 
 		if (m_options.useSRL)
-			out << " ||| " << rule->srlInfo;
+			out << " ||| @S@ " << rule->srlInfo;
 
 		out << "\n";
 
