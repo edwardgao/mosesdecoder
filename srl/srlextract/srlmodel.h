@@ -5,6 +5,7 @@
 #include <set>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
+#include <memory>
 #include "srlinfo.h"
 
 namespace srl{
@@ -43,13 +44,106 @@ namespace srl{
 
 	/*! The concept of SRL event is that given an SRL frame, extract corresponding value of a particular event.
 	It is very like a dep tree, but it is a tree-structure back-off, pointing from leaf to the root
+	Beware: Everything assumed log domain, so backoff.
 	*/
-	class SRLEventExtractor{
-
+	class SRLEventModel{
+	private:
+		SRLEventModel* m_backoff;
 	public:
+		static double c_flooredScore;
+		// Get back-off event, if no backoff event, return NULL. A stub is provided
+		virtual SRLEventModel* GetBackoffEvent(); 
+		virtual void SetBackoffEvent(SRLEventModel* bof);
 		
+		// Cntr/Dstr
+		SRLEventModel() : m_backoff(NULL) {};
+		SRLEventModel(SRLEventModel* backoff) : m_backoff(backoff) {};
+		virtual ~SRLEventModel(){};
+
+
+		// Given an SRL Hypothesis, it should provide two scores: direct scored and backed off
+		// These two are not usually called separately. Note that only direct score is made public
+		virtual double GetModelScore(const SRLHypothesis& hyp);
+
+		// These are for the trainers:
+		virtual int GetEventID(const SRLHypothesis& hyp) = 0; // Get distinguishable Event ID, this is used to collect statistics
+		virtual int GetEventMarginalID(const SRLHypothesis& hyp)  = 0; // Get distinguishable Event ID, this is used to collect statistics
+		// The statistics works like this: the MLE collects count of each EventMarginalID as #EM, and for each event id #id, 
+		// an unique event will be the combination of EventId and EventMarginal ID.
+		// And the marginal likelihood will be #id/#em.
+
+		virtual std::string& EventTypeName(); // Type name of the event
+
+
+	protected:
+		// Get backoff discount, this is usually called by children
+		virtual double GetBackOffDiscount(const SRLHypothesis& hyp) = 0;
+
+		// Get direct score, if need to backoff, return false
+		virtual bool GetDirectScore(const SRLHypothesis& hyp, double& score) = 0;
 	};
 
+
+	/*!
+	A set of SRL Event models and its tree structure. The objects are stored in auto_ptr, therefore, make sure 
+	it is created using "new" operator and do not delete unless it is released
+	*/
+	class SRLEventModelSet{
+	protected:
+
+		friend class SRLEventModelTrainer;
+		boost::unordered_map<std::string, std::auto_ptr<SRLEventModel> > m_srlmodels;
+		std::set<SRLEventModel* > m_leaves;
+		std::set<std::string> m_names;
+	public:
+		/// Release 
+		SRLEventModel* ReleaseModel(const std::string& name);
+		/// Only Get
+		SRLEventModel* GetModel(const std::string& name);
+		/// Add, release the old model if there is
+		SRLEventModel* SetModel(SRLEventModel* em, bool isLeaf);
+
+		inline const std::set<std::string> GetNames() const {return m_names;}
+		inline const std::set<SRLEventModel* > GetLeaves() const {return m_leaves;};
+	};
+
+
+	/*! The trainer for SRL (Tree)
+	*/
+	class SRLEventModelTrainer{		
+	private:
+		// Statistics. All statistics are collected for each model, each marginal id and each marginal id + event id
+		struct MarginalStatistics{
+			int MarginalID;
+			double Count;
+			boost::unordered_map<int, double> MarginalCount;
+			MarginalStatistics() : MarginalID(-1), Count(0) {};
+			MarginalStatistics(int id) : MarginalID(id), Count(0) {};
+		};
+
+		struct ModelStatistics{
+			SRLEventModel* Model;
+			boost::unordered_map<int, MarginalStatistics> ModelCount;
+			ModelStatistics(SRLEventModel* model): Model(model) {};
+
+			void AddCount(const SRLHypothesis& h, double count);
+		};
+	public:
+		// Configures
+		std::string SortedInputFile;
+		std::string SortedReversedInputFile;
+		std::string OutModelFile;
+
+		SRLEventModelSet* ModelSet;
+
+		// Do training
+		bool Train();
+	
+	protected:
+		/*TODO: Implement IO
+		bool Normalize(); // Normalize all models
+		bool WriteModelFile();*/
+	};
 }
 
 
