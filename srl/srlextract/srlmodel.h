@@ -5,6 +5,7 @@
 #include <set>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
+#include <boost/shared_ptr.hpp>
 #include <memory>
 #include "srlinfo.h"
 
@@ -85,26 +86,26 @@ namespace srl{
 
 
 	/*!
-	A set of SRL Event models and its tree structure. The objects are stored in auto_ptr, therefore, make sure 
+	A set of SRL Event models and its tree structure. The objects are stored in an array and WILL BE DELETED when destructed, therefore, make sure 
 	it is created using "new" operator and do not delete unless it is released
 	*/
 	class SRLEventModelSet{
 	protected:
 
 		friend class SRLEventModelTrainer;
-		boost::unordered_map<std::string, std::auto_ptr<SRLEventModel> > m_srlmodels;
-		std::set<SRLEventModel* > m_leaves;
+		boost::unordered_map<std::string, boost::shared_ptr<SRLEventModel> > m_srlmodels;
+		std::set<boost::shared_ptr<SRLEventModel> > m_leaves;
 		std::set<std::string> m_names;
 	public:
 		/// Release 
-		SRLEventModel* ReleaseModel(const std::string& name);
+        boost::shared_ptr<SRLEventModel> ReleaseModel(const std::string& name);
 		/// Only Get
-		SRLEventModel* GetModel(const std::string& name);
+        boost::shared_ptr<SRLEventModel> GetModel(const std::string& name);
 		/// Add, release the old model if there is
-		SRLEventModel* SetModel(SRLEventModel* em, bool isLeaf);
+    	boost::shared_ptr<SRLEventModel> SetModel(SRLEventModel* em, bool isLeaf);
 
 		inline const std::set<std::string> GetNames() const {return m_names;}
-		inline const std::set<SRLEventModel* > GetLeaves() const {return m_leaves;};
+		inline const std::set<boost::shared_ptr<SRLEventModel> > GetLeaves() const {return m_leaves;};
 	};
 
 

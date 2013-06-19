@@ -29,13 +29,13 @@ namespace srl
 	}
 	
 	
-	SRLEventModel* SRLEventModelSet::ReleaseModel(const std::string& name){
-		boost::unordered_map<string, auto_ptr<SRLEventModel> >::iterator it = m_srlmodels.find(name);
+    boost::shared_ptr<SRLEventModel> SRLEventModelSet::ReleaseModel(const std::string& name){
+		boost::unordered_map<string, boost::shared_ptr<SRLEventModel> >::iterator it = m_srlmodels.find(name);
 		if(it == m_srlmodels.end()){
-			return NULL;
+			return boost::shared_ptr<SRLEventModel>();
 		}
-		SRLEventModel* ret = it->second.release();
-		for(set<SRLEventModel*>::iterator i = m_leaves.begin() ; i != m_leaves.end() ; i++){
+        boost::shared_ptr<SRLEventModel> ret(it->second);
+		for(set<boost::shared_ptr<SRLEventModel> >::iterator i = m_leaves.begin() ; i != m_leaves.end() ; i++){
 			if(*i == ret){
 				m_leaves.erase(i);
 				break;
@@ -45,21 +45,21 @@ namespace srl
 		return ret;
 	}
 
-	SRLEventModel* SRLEventModelSet::GetModel(const std::string& name){
-		boost::unordered_map<string, auto_ptr<SRLEventModel> >::iterator it = m_srlmodels.find(name);
+    boost::shared_ptr<SRLEventModel> SRLEventModelSet::GetModel(const std::string& name){
+		boost::unordered_map<string, boost::shared_ptr<SRLEventModel> >::iterator it = m_srlmodels.find(name);
 		if(it == m_srlmodels.end()){
-			return NULL;
+			return boost::shared_ptr<SRLEventModel>();
 		}
-		return it->second.get();
+		return it->second;
 	}
 	
-	SRLEventModel* SRLEventModelSet::SetModel(SRLEventModel* em, bool isLeaf){
+    boost::shared_ptr<SRLEventModel> SRLEventModelSet::SetModel(SRLEventModel* em, bool isLeaf){
 		string name = em->EventTypeName();
-		SRLEventModel* ret = ReleaseModel(name);
-		m_srlmodels[name] = auto_ptr<SRLEventModel>(em);
+        boost::shared_ptr<SRLEventModel> ret = ReleaseModel(name);
+		m_srlmodels[name] = boost::shared_ptr<SRLEventModel>(em);
 		m_names.insert(name);
 		if(isLeaf){
-			m_leaves.insert(em);
+			m_leaves.insert(boost::shared_ptr<SRLEventModel>(em));
 		}
 		return ret;
 	}
