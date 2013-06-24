@@ -3,7 +3,7 @@
 #include <cmath>
 #include <assert.h>
 #include <algorithm>
-
+#include "boost/tuple/tuple.hpp"
 using namespace std;
 namespace srl
 {
