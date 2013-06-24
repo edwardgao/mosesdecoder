@@ -126,9 +126,9 @@ namespace srl
 	}
 
 	inline bool _less_than_tuple(const boost::tuple<int, int, double>& x, const boost::tuple<int, int, double>& y){
-		if(x.get<0>() < y.get<0>)
+		if(x.get<0>() < y.get<0>())
 			return true;
-		else if(x.get<0>() == y.get<0> && x.get<1>() < y.get<1>)
+		else if(x.get<0>() == y.get<0>() && x.get<1>() < y.get<1>())
 			return true;
 		return false;
 	}
