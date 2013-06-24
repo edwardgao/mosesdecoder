@@ -3,19 +3,46 @@ SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
 SET(LIBPHEX_SRC
     AlignmentPhrase.cpp
+	AlignmentPhrase.h
     ExtractedRule.cpp
+
     HoleCollection.cpp
+	HoleCollection.h
     InputFileStream.cpp
+	InputFileStream.h
     OutputFileStream.cpp
     PhraseAlignment.cpp
+	SafeGetline.h
     ScoreFeature.cpp
     ScoreFeatureTest.cpp
     SentenceAlignment.cpp
     SentenceAlignmentWithSyntax.cpp
     SyntaxTree.cpp
+	SyntaxTree.h
     tables-core.cpp
+	tables-core.h
+	RuleExtractionOptions.h
+	PhraseExtractionOptions.h
     domain.cpp
-    XmlTree.cpp
+	domain.h
+    XmlTree.cpp                                      
+	ExtractedRule.h    
+	OutputFileStream.h
+	score.h
+	XmlException.h
+	extract-lex.h
+	PhraseAlignment.h
+	ScoreFeature.h
+	XmlTree.h
+	gzfilebuf.h
+	SentenceAlignment.h
+	hierarchical.h
+	relax-parse.h
+	SentenceAlignmentWithSyntax.h
+	Hole.h
+	RuleExist.h
+	srlbridge.h
+	srlbridge.cpp
 )
 
 
@@ -65,6 +92,22 @@ TARGET_LINK_LIBRARIES (
     ${ZLIB_LIBRARIES}
     ${Boost_LIBRARIES}
    )
+
+ADD_EXECUTABLE( srl-model-estimate srl-model-estimate.cpp )
+
+TARGET_LINK_LIBRARIES (
+    srl-model-estimate
+    phex
+    moseslib
+    srl_static
+    ken
+    util
+    utils
+    search
+    ${ZLIB_LIBRARIES}
+    ${Boost_LIBRARIES}
+   )
+
 ADD_EXECUTABLE(  extract-lex extract-lex-main.cpp )
 
 TARGET_LINK_LIBRARIES (

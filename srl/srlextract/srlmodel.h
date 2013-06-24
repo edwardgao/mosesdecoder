@@ -73,15 +73,52 @@ namespace srl{
 		// an unique event will be the combination of EventId and EventMarginal ID.
 		// And the marginal likelihood will be #id/#em.
 
-		virtual std::string& EventTypeName(); // Type name of the event
+		virtual std::string& EventTypeName() = 0; // Type name of the event
+		
+		// Return whether this is a forward or backward feature (i.e. whether we should give a forward or backward phrase to it)
+		virtual bool IsForwardFeature() = 0;
 
+	protected:
+		typedef boost::unordered_map<std::pair<int, int>, double> ModelStoreType;
+		ModelStoreType m_ModelStore;
 
 	protected:
 		// Get backoff discount, this is usually called by children
 		virtual double GetBackOffDiscount(const SRLHypothesis& hyp) = 0;
 
 		// Get direct score, if need to backoff, return false
-		virtual bool GetDirectScore(const SRLHypothesis& hyp, double& score) = 0;
+		virtual bool GetDirectScore(const SRLHypothesis& hyp, double& score){
+			int eventId = GetEventID(hyp);
+			int margId = GetEventMarginalID(hyp);
+			ModelStoreType::iterator it = m_ModelStore.find(std::make_pair(eventId,margId));
+			if(it == m_ModelStore.end()){
+				return false;
+			}else
+			{
+				score = it->second;
+				return false;
+			}
+		}
+
+
+	public:
+		// Basic parameter update routines & data structures
+		// Get direct score, if need to backoff, return false
+		virtual void SetDirectScore(int eventId, int margId, double score){
+			ModelStoreType::iterator it = m_ModelStore.find(std::make_pair(eventId,margId));
+			if(it == m_ModelStore.end()){
+				m_ModelStore[std::make_pair(eventId,margId)] = score;
+			}else
+			{
+				it->second = score;
+			}
+		}
+
+		// Serialize the model
+		virtual void Serialize(std::ostream &ostr);
+
+		// Deserialize
+		virtual void Deserialize(std::istream &istr);
 	};
 
 
@@ -106,11 +143,10 @@ namespace srl{
 
 		inline const std::set<std::string> GetNames() const {return m_names;}
 		inline const std::set<boost::shared_ptr<SRLEventModel> > GetLeaves() const {return m_leaves;};
+
 	};
-
-
 	/*! The trainer for SRL (Tree)
-	*/
+	*/	
 	class SRLEventModelTrainer{		
 	private:
 		// Statistics. All statistics are collected for each model, each marginal id and each marginal id + event id
@@ -123,28 +159,31 @@ namespace srl{
 		};
 
 		struct ModelStatistics{
-			SRLEventModel* Model;
+			boost::shared_ptr<SRLEventModel> Model;
 			boost::unordered_map<int, MarginalStatistics> ModelCount;
-			ModelStatistics(SRLEventModel* model): Model(model) {};
-
+			ModelStatistics(boost::shared_ptr<SRLEventModel>& model): Model(model) {};			
 			void AddCount(const SRLHypothesis& h, double count);
+			// Normalize and update the model parameters. After normalizing the associated model parameter will be updated too
+			void Normalize();
 		};
+
+		std::vector<ModelStatistics> m_stats;
 	public:
-		// Configures
-		std::string SortedInputFile;
-		std::string SortedReversedInputFile;
-		std::string OutModelFile;
+		
+		// Initialize
+		void InitTraining(bool forward,SRLEventModelSet & models);
 
-		SRLEventModelSet* ModelSet;
+		// Each event
+		void AddCount(const SRLHypothesis& h, double count);
+		
+		// Normalize Model
+		void Normalize();
 
-		// Do training
-		bool Train();
-	
+
 	protected:
-		/*TODO: Implement IO
-		bool Normalize(); // Normalize all models
-		bool WriteModelFile();*/
+
 	};
+
 }
 
 
