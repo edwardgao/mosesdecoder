@@ -11,8 +11,8 @@ using namespace std;
 using namespace MosesTraining;
 
 namespace srl{
-#if 0
 
+#if 0
 	void SRLEventModelTrainer::Train(istream& extractFileP,  ostream& output, bool bIsInv)
 	{
 		float lastCount = 0.0f;

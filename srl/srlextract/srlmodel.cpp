@@ -3,17 +3,22 @@
 #include <cmath>
 #include <assert.h>
 #include <algorithm>
+#include <sstream>
 #include "boost/tuple/tuple.hpp"
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/compare.hpp>
+#include <boost/bind.hpp>
+#include <boost/regex.hpp>
 using namespace std;
 namespace srl
 {
 
 	double SRLEventModel::c_flooredScore = -500;
 
-	SRLEventModel* SRLEventModel::GetBackoffEvent(){
+	boost::shared_ptr<SRLEventModel> SRLEventModel::GetBackoffEvent(){
 		return m_backoff;
 	}
-	void SRLEventModel::SetBackoffEvent(SRLEventModel* bof){
+	void SRLEventModel::SetBackoffEvent(boost::shared_ptr<SRLEventModel> bof){
 		m_backoff = bof;
 	}
 
@@ -55,7 +60,7 @@ namespace srl
 		return it->second;
 	}
 
-	boost::shared_ptr<SRLEventModel> SRLEventModelSet::SetModel(SRLEventModel* em, bool isLeaf){
+	boost::shared_ptr<SRLEventModel> SRLEventModelSet::SetModel(boost::shared_ptr<SRLEventModel> em, bool isLeaf){
 		string name = em->EventTypeName();
 		boost::shared_ptr<SRLEventModel> ret = ReleaseModel(name);
 		m_srlmodels[name] = boost::shared_ptr<SRLEventModel>(em);
@@ -151,8 +156,111 @@ namespace srl
 		ostr << "@@END:" <<this->EventTypeName() << "@@" << endl;
 	}
 
-	// TODO Deserialize
+	//
 	void SRLEventModel::Deserialize(std::istream &istr){
 	}
+
+	boost::shared_ptr<SRLEventModelSet> SRLEventModelSet::Construct(std::istream& strModelDef)
+	{
+		string full;
+		string line;
+		while(strModelDef){
+			line = "";
+			std::getline(strModelDef, line);
+			if(line.length()){
+				if(full.length())
+					full += "|||";
+				full+=line;
+			}
+		}
+
+		return Construct(full);
+	}
+
+	boost::shared_ptr<SRLEventModelSet> SRLEventModelSet::Construct(std::string strModelDef){
+		boost::shared_ptr<SRLEventModelSet> modelset(new SRLEventModelSet());
+		typedef boost::split_iterator<string::iterator> string_split_iterator;
+		vector<string> modeldefs;
+		vector<string> modeldeps;
+		vector<string> modelparts;
+
+		map<string, string> modelnames;
+
+		if(!modeldefs.size()){
+			throw invalid_argument("Invalid model parameter for SRL modelset");
+		}
+		for(string_split_iterator it=
+			boost::make_split_iterator(strModelDef, boost::first_finder("|||", boost::is_iequal()));
+			it!=string_split_iterator();	++it)
+		{
+			string imodel = "";
+			for(string_split_iterator jt=
+				boost::make_split_iterator(boost::copy_range<string>(*it), boost::first_finder("-->", boost::is_iequal()));
+				it!=string_split_iterator();	++jt)
+			{
+				if(imodel.length() == 0){
+					imodel = boost::trim_copy(boost::copy_range<string>(*jt));
+					continue;
+				}
+				string nmodel = boost::trim_copy(boost::copy_range<string>(*jt));
+
+				map<string, string>::iterator it = modelnames.find(imodel);
+				if(it!=modelnames.end()){
+					if(it->second == nmodel)
+						continue;
+					else
+					{
+						string emessage = "Invalid model parameter for SRL modelset: Duplicated model with different back-offs";
+						emessage += imodel;
+						throw invalid_argument("Invalid model parameter for SRL modelset");
+					}
+				}else{
+					modelnames.insert(make_pair(boost::trim_copy(imodel), boost::trim_copy(nmodel)));
+				}
+			}
+			if(imodel.size()){
+				string nmodel = "";
+
+				map<string, string>::iterator it = modelnames.find(imodel);
+				if(it==modelnames.end()){
+					modelnames.insert(make_pair(boost::trim_copy(imodel), boost::trim_copy(nmodel)));
+				}				
+			}
+		}
+
+		map<string, boost::shared_ptr<SRLEventModel> > models;
+		// Create all
+		for(map<string, string>::iterator it = modelnames.begin() ; it!=modelnames.end() ;it++){
+			// params
+			boost::split(modelparts, it->first, boost::is_any_of(" \t"), boost::algorithm::token_compress_on);
+			boost::shared_ptr<SRLEventModel> model;
+			if(modeldefs.size() == 0){
+				// Creat
+			}
+			models[it->first] = model;
+			//boost::shared_ptr<SRLEventModel> model(new SRLEventModel());
+		}
+		//(Link)
+		for(map<string, string>::iterator it = modelnames.begin() ; it!=modelnames.end() ;it++){
+			if(it->second.length() > 0){
+				map<string, boost::shared_ptr<SRLEventModel> >::iterator jt = models.find(it->second);
+				if(jt == models.end()){
+					string emessage = "Error, the model is not defined: " ;
+					emessage = emessage + it->second;
+					throw invalid_argument(emessage);
+				}
+				map<string, boost::shared_ptr<SRLEventModel> >::iterator kt = models.find(it->first);
+				assert(kt != models.end());
+				kt->second->SetBackoffEvent(jt->second);
+			}
+		}
+
+		for(map<string, boost::shared_ptr<SRLEventModel> >::iterator kt; kt!= models.end(); kt++){
+			modelset->SetModel(kt->second, kt->second.get() ? false : true);			
+		}
+
+		return modelset;
+	}
 }
+
 

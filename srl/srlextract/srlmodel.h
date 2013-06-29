@@ -49,16 +49,16 @@ namespace srl{
 	*/
 	class SRLEventModel{
 	private:
-		SRLEventModel* m_backoff;
+		boost::shared_ptr<SRLEventModel> m_backoff;
 	public:
 		static double c_flooredScore;
 		// Get back-off event, if no backoff event, return NULL. A stub is provided
-		virtual SRLEventModel* GetBackoffEvent(); 
-		virtual void SetBackoffEvent(SRLEventModel* bof);
+		virtual boost::shared_ptr<SRLEventModel> GetBackoffEvent(); 
+		virtual void SetBackoffEvent(boost::shared_ptr<SRLEventModel> bof);
 		
 		// Cntr/Dstr
-		SRLEventModel() : m_backoff(NULL) {};
-		SRLEventModel(SRLEventModel* backoff) : m_backoff(backoff) {};
+		SRLEventModel() : m_backoff() {};
+		SRLEventModel(boost::shared_ptr<SRLEventModel> backoff) : m_backoff(backoff) {};
 		virtual ~SRLEventModel(){};
 
 
@@ -139,10 +139,18 @@ namespace srl{
 		/// Only Get
         boost::shared_ptr<SRLEventModel> GetModel(const std::string& name);
 		/// Add, release the old model if there is
-    	boost::shared_ptr<SRLEventModel> SetModel(SRLEventModel* em, bool isLeaf);
+    	boost::shared_ptr<SRLEventModel> SetModel(boost::shared_ptr<SRLEventModel> em, bool isLeaf);
 
 		inline const std::set<std::string> GetNames() const {return m_names;}
 		inline const std::set<boost::shared_ptr<SRLEventModel> > GetLeaves() const {return m_leaves;};
+
+	public:
+		
+		/// Create a modelset given string-based model definition, below is the definition of the model definition
+		/// FEAT_NAME PARAMS --> BACK_OFF_FEAT_NAME PARAMS ||| FEAT_NAME PARAMS --> BACK_OFF_FEAT_NAME PARAMS ...
+		static boost::shared_ptr<SRLEventModelSet> Construct(std::string strModelDef);
+
+		static boost::shared_ptr<SRLEventModelSet> Construct(std::istream& strModelDef);
 
 	};
 	/*! The trainer for SRL (Tree)
