@@ -139,6 +139,13 @@ namespace srl
 	}
 	// Serialize the model
 	void SRLEventModel::Serialize(std::ostream &ostr){
+		ostr << "@@BEGIN:" <<this->EventTypeName() << "@@" << endl;
+
+		ostr << "@@HEADER:" <<this->EventTypeName() << "@@" << endl;
+
+		this->SerializeAssociated(ostr);
+
+		ostr << "@@DATA:" <<this->EventTypeName() << "@@" << endl;
 		// Sort
 		vector<boost::tuple<int, int, double> > entries;
 		entries.reserve(m_ModelStore.size());
@@ -150,9 +157,7 @@ namespace srl
 		for(vector<boost::tuple<int, int, double> >::iterator jt = entries.begin(); jt!=entries.end(); jt++){
 			ostr << jt->get<0>() << " " << jt->get<1>() << " " << jt->get<2>() << endl;
 		}
-		if(m_backoff){
-			ostr << "@@BOF:" << this->m_backoff->EventTypeName() << "@@" << endl;
-		}
+		
 		ostr << "@@END:" <<this->EventTypeName() << "@@" << endl;
 	}
 
@@ -260,6 +265,31 @@ namespace srl
 		}
 
 		return modelset;
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+	//////////////// Model implementations //////////////
+
+	void PredicateGivenSourceWordModel::SerializeAssociated(ostream &ostr){
+	}
+
+	void PredicateGivenSourceWordModel::DeSerializeAssociated(ostream &ostr){
+	}
+		
+	int PredicateGivenSourceWordModel::GetEventID(const SRLHypothesis& hyp){
+	}
+
+	int PredicateGivenSourceWordModel::GetEventMarginalID(const SRLHypothesis& hyp){
 	}
 }
 

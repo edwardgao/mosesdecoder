@@ -10,7 +10,7 @@
 #include "srlinfo.h"
 
 namespace srl{
-	
+
 	/*! This interface is a contract between SRL event extractor and decoder/nbest hypothesis
 	the decoder/nbest rescorer should subclass it and provide necessary information for SRL event
 	classifier.	*/
@@ -27,20 +27,26 @@ namespace srl{
 
 	public:
 		/*! The implementation of the interface should return the token	sequence of the whole phrase/span it covers
-		we always assume the tokens are mapped to some sort of ids to avoid dealing with different types. It should
+		NOT NOW(we always assume the tokens are mapped to some sort of ids to avoid dealing with different types.) It should
 		contain all the tokens including those provided by non-terminals*/
-		virtual std::vector<int>& GetHypothesisTokenSequence() = 0;
+		virtual const std::vector<int>& GetHypothesisTokenSequence() const= 0;
 
 		/*! It should return all the non-terminals that DIRECTLY (not nested) provided in the hypothesis, see definition of NT for
 		reference*/
-		virtual std::vector<NT>& GetAllNonTerminals() = 0;
-		
+		virtual const std::vector<NT>& GetAllNonTerminals() const = 0;
+
 		/*! Get all the new tokens provided directly in the hypothesis, the returned value should be an array of indices, pointing
 		to relative position in the array returned by GetHypothesisTokenSequence*/
-		virtual std::vector<size_t>& GetNewTokenSequence() = 0;
+		virtual const std::vector<size_t>& GetTokenSequenceWithoutNT() const = 0;
 
 		/*! Get the SRL structures provided by **New TOKENS** */
-		virtual std::vector<SRLFrame>& GetProvidedFrames() = 0;
+		virtual const std::vector<SRLFrame>& GetProvidedFrames() const = 0;
+
+
+		/*! Get the source token sequence */
+		virtual const std::vector<std::string>& GetSourceTokenSequnce() const = 0;
+
+		virtual const std::vector<std::string>& GetSourceTokenSequnceWithoutNT() const = 0;
 	};
 
 	/*! The concept of SRL event is that given an SRL frame, extract corresponding value of a particular event.
@@ -55,7 +61,7 @@ namespace srl{
 		// Get back-off event, if no backoff event, return NULL. A stub is provided
 		virtual boost::shared_ptr<SRLEventModel> GetBackoffEvent(); 
 		virtual void SetBackoffEvent(boost::shared_ptr<SRLEventModel> bof);
-		
+
 		// Cntr/Dstr
 		SRLEventModel() : m_backoff() {};
 		SRLEventModel(boost::shared_ptr<SRLEventModel> backoff) : m_backoff(backoff) {};
@@ -73,18 +79,20 @@ namespace srl{
 		// an unique event will be the combination of EventId and EventMarginal ID.
 		// And the marginal likelihood will be #id/#em.
 
-		virtual std::string& EventTypeName() = 0; // Type name of the event
-		
+		virtual const std::string& EventTypeName() const {return m_eventName;}; // Type name of the event
+
 		// Return whether this is a forward or backward feature (i.e. whether we should give a forward or backward phrase to it)
-		virtual bool IsForwardFeature() = 0;
+		virtual bool IsForwardFeature() const {return m_forward_feature;};
 
 	protected:
 		typedef boost::unordered_map<std::pair<int, int>, double> ModelStoreType;
 		ModelStoreType m_ModelStore;
+		std::string m_eventName;
+		bool m_forward_feature;
 
 	protected:
 		// Get backoff discount, this is usually called by children
-		virtual double GetBackOffDiscount(const SRLHypothesis& hyp) = 0;
+		virtual double GetBackOffDiscount(const SRLHypothesis& hyp) {return 0;}
 
 		// Get direct score, if need to backoff, return false
 		virtual bool GetDirectScore(const SRLHypothesis& hyp, double& score){
@@ -119,6 +127,11 @@ namespace srl{
 
 		// Deserialize
 		virtual void Deserialize(std::istream &istr);
+
+	protected:
+		virtual void SerializeAssociated(std::ostream &ostr) = 0;
+
+		virtual void DeSerializeAssociated(std::ostream &ostr) = 0;
 	};
 
 
@@ -135,17 +148,17 @@ namespace srl{
 		std::set<std::string> m_names;
 	public:
 		/// Release 
-        boost::shared_ptr<SRLEventModel> ReleaseModel(const std::string& name);
+		boost::shared_ptr<SRLEventModel> ReleaseModel(const std::string& name);
 		/// Only Get
-        boost::shared_ptr<SRLEventModel> GetModel(const std::string& name);
+		boost::shared_ptr<SRLEventModel> GetModel(const std::string& name);
 		/// Add, release the old model if there is
-    	boost::shared_ptr<SRLEventModel> SetModel(boost::shared_ptr<SRLEventModel> em, bool isLeaf);
+		boost::shared_ptr<SRLEventModel> SetModel(boost::shared_ptr<SRLEventModel> em, bool isLeaf);
 
 		inline const std::set<std::string> GetNames() const {return m_names;}
 		inline const std::set<boost::shared_ptr<SRLEventModel> > GetLeaves() const {return m_leaves;};
 
 	public:
-		
+
 		/// Create a modelset given string-based model definition, below is the definition of the model definition
 		/// FEAT_NAME PARAMS --> BACK_OFF_FEAT_NAME PARAMS ||| FEAT_NAME PARAMS --> BACK_OFF_FEAT_NAME PARAMS ...
 		static boost::shared_ptr<SRLEventModelSet> Construct(std::string strModelDef);
@@ -177,19 +190,36 @@ namespace srl{
 
 		std::vector<ModelStatistics> m_stats;
 	public:
-		
+
 		// Initialize
 		void InitTraining(bool forward,SRLEventModelSet & models);
 
 		// Each event
 		void AddCount(const SRLHypothesis& h, double count);
-		
+
 		// Normalize Model
 		void Normalize();
 
 
 	protected:
 
+	};
+
+
+	///////////////////////////////////
+	// A number of events
+
+
+	/// Most simple one, given source word, how likely it is associated with a certail predicate
+	class PredicateGivenSourceWordModel : public SRLEventModel{
+
+		virtual void SerializeAssociated(std::ostream &ostr);
+
+		virtual void DeSerializeAssociated(std::ostream &ostr);
+		
+		virtual int GetEventID(const SRLHypothesis& hyp); // Get distinguishable Event ID, this is used to collect statistics
+
+		virtual int GetEventMarginalID(const SRLHypothesis& hyp); // Get distinguishable Event ID, this is used to collect statistics
 	};
 
 }
