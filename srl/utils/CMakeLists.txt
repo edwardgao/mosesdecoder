@@ -3,7 +3,7 @@
 
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
-SET(LIBUTILS_SRC IOUtils.cxx IOUtils.h Params.cxx Params.h porter_stemmer.c porter_stemmer.h SimpleLogger.cxx SimpleLogger.h)
+SET(LIBUTILS_SRC IOUtils.cxx IOUtils.h Params.cxx Params.h porter_stemmer.c porter_stemmer.h SimpleLogger.cxx SimpleLogger.h hdict.h)
 
 ADD_LIBRARY(utils STATIC ${LIBUTILS_SRC})
 

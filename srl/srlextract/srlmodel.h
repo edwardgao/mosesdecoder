@@ -8,6 +8,7 @@
 #include <boost/shared_ptr.hpp>
 #include <memory>
 #include "srlinfo.h"
+#include "hdict.h"
 
 namespace srl{
 
@@ -57,7 +58,20 @@ namespace srl{
 	private:
 		boost::shared_ptr<SRLEventModel> m_backoff;
 	public:
-		static double c_flooredScore;
+
+		enum TScoreCombineType{
+			COMBINE_ADD,
+			COMBINE_MUL,
+			COMBINE_MAX,
+			COMBINE_MIN,
+			COMBINE_MEAN,
+			COMBINE_GEOMEAN,
+		} ;
+
+		TScoreCombineType ScoreCombineType;
+		typedef std::pair<int, int> EventID_TYPE;
+
+		double c_flooredScore;
 		// Get back-off event, if no backoff event, return NULL. A stub is provided
 		virtual boost::shared_ptr<SRLEventModel> GetBackoffEvent(); 
 		virtual void SetBackoffEvent(boost::shared_ptr<SRLEventModel> bof);
@@ -73,11 +87,13 @@ namespace srl{
 		virtual double GetModelScore(const SRLHypothesis& hyp);
 
 		// These are for the trainers:
-		virtual int GetEventID(const SRLHypothesis& hyp) = 0; // Get distinguishable Event ID, this is used to collect statistics
-		virtual int GetEventMarginalID(const SRLHypothesis& hyp)  = 0; // Get distinguishable Event ID, this is used to collect statistics
+		
 		// The statistics works like this: the MLE collects count of each EventMarginalID as #EM, and for each event id #id, 
 		// an unique event will be the combination of EventId and EventMarginal ID.
 		// And the marginal likelihood will be #id/#em.
+		// The first number returned will be the event id, and the second event marginal id
+		virtual std::vector<EventID_TYPE> GetEventID(const SRLHypothesis& hyp) = 0; // Get distinguishable Event ID, this is used to collect statistics
+
 
 		virtual const std::string& EventTypeName() const {return m_eventName;}; // Type name of the event
 
@@ -95,16 +111,14 @@ namespace srl{
 		virtual double GetBackOffDiscount(const SRLHypothesis& hyp) {return 0;}
 
 		// Get direct score, if need to backoff, return false
-		virtual bool GetDirectScore(const SRLHypothesis& hyp, double& score){
-			int eventId = GetEventID(hyp);
-			int margId = GetEventMarginalID(hyp);
-			ModelStoreType::iterator it = m_ModelStore.find(std::make_pair(eventId,margId));
+		virtual bool GetDirectScore(int eventID, int margId, double& score){
+			ModelStoreType::iterator it = m_ModelStore.find(std::make_pair(eventID,margId));
 			if(it == m_ModelStore.end()){
 				return false;
 			}else
 			{
 				score = it->second;
-				return false;
+				return true;
 			}
 		}
 
@@ -213,13 +227,24 @@ namespace srl{
 	/// Most simple one, given source word, how likely it is associated with a certail predicate
 	class PredicateGivenSourceWordModel : public SRLEventModel{
 
+	protected:
+
+		HDICT m_dict; 
+
+	public:
+
+		inline bool LockedVocab() const {return m_dict.LockedVocab();}
+
 		virtual void SerializeAssociated(std::ostream &ostr);
 
 		virtual void DeSerializeAssociated(std::ostream &ostr);
 		
-		virtual int GetEventID(const SRLHypothesis& hyp); // Get distinguishable Event ID, this is used to collect statistics
+		virtual std::vector<EventID_TYPE> GetEventID(const SRLHypothesis& hyp); // Get distinguishable Event ID, this is used to collect statistics
 
-		virtual int GetEventMarginalID(const SRLHypothesis& hyp); // Get distinguishable Event ID, this is used to collect statistics
+
+		PredicateGivenSourceWordModel(bool bLockVocab): m_dict(bLockVocab)  {ScoreCombineType = COMBINE_MEAN; c_flooredScore = 1e-10;}
+
+		virtual ~PredicateGivenSourceWordModel() {}
 	};
 
 }

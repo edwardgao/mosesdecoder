@@ -9,11 +9,11 @@
 #include <boost/algorithm/string/compare.hpp>
 #include <boost/bind.hpp>
 #include <boost/regex.hpp>
+#include <limits>
 using namespace std;
 namespace srl
 {
 
-	double SRLEventModel::c_flooredScore = -500;
 
 	boost::shared_ptr<SRLEventModel> SRLEventModel::GetBackoffEvent(){
 		return m_backoff;
@@ -23,16 +23,66 @@ namespace srl
 	}
 
 	double SRLEventModel::GetModelScore(const SRLHypothesis& hyp){
-		double score = 0;
-		if(GetDirectScore(hyp, score)){
-			return score;
-		}else{
-			if(!m_backoff){
-				return c_flooredScore;
-			}else{
-				return m_backoff->GetModelScore(hyp) + m_backoff->GetBackOffDiscount(hyp);
-			}
+		double score;
+		switch (ScoreCombineType)
+		{
+		case srl::SRLEventModel::COMBINE_ADD:
+		case srl::SRLEventModel::COMBINE_MEAN:
+			score = 0;
+			break;
+		case srl::SRLEventModel::COMBINE_GEOMEAN:
+		case srl::SRLEventModel::COMBINE_MUL:
+			score = 1.0;
+			break;
+		case srl::SRLEventModel::COMBINE_MAX:
+			score = numeric_limits<double>::min();;
+			break;
+		case srl::SRLEventModel::COMBINE_MIN:
+			score = numeric_limits<double>::max();
+			break;
+		default:
+			throw exception("Unknow combine type");
+			break;
 		}
+
+		
+		double tempscore;
+		vector<EventID_TYPE> seq = GetEventID(hyp);
+
+		for(int i = 0; i < seq.size(); i++){
+			if(!GetDirectScore(seq[i].first, seq[i].second, tempscore)){
+				//
+			}else{
+				if(!m_backoff){
+					tempscore =  c_flooredScore;
+				}else{
+					tempscore = m_backoff->GetModelScore(hyp) + m_backoff->GetBackOffDiscount(hyp);
+				}
+			}
+			switch (ScoreCombineType)
+			{
+			case srl::SRLEventModel::COMBINE_ADD:
+			case srl::SRLEventModel::COMBINE_MEAN:
+				score += tempscore;
+				break;
+			case srl::SRLEventModel::COMBINE_GEOMEAN:
+			case srl::SRLEventModel::COMBINE_MUL:
+				score *= tempscore;
+				break;
+			case srl::SRLEventModel::COMBINE_MAX:
+				score = max(score, tempscore);
+				break;
+			case srl::SRLEventModel::COMBINE_MIN:
+				score = min(score, tempscore);
+				break;
+			default:
+				throw exception("Unknow combine type");
+				break;
+			}
+			if(score < c_flooredScore)
+				score = c_flooredScore;
+		}
+		return score;
 	}
 
 
@@ -73,22 +123,30 @@ namespace srl
 
 
 	void SRLEventModelTrainer::ModelStatistics::AddCount(const SRLHypothesis& h, double count){
-		int marginalId = Model->GetEventMarginalID(h);
-		int eventid = Model->GetEventID(h);
-		boost::unordered_map<int, MarginalStatistics>::iterator it = ModelCount.find(marginalId);
-		if(it == ModelCount.end()){
-			pair<boost::unordered_map<int, MarginalStatistics>::iterator, bool> ipa = ModelCount.insert(make_pair(marginalId, MarginalStatistics(marginalId)));
-			it = ipa.first;
-			it->second.Count = count;
-		}else{
-			it->second.Count += count;
+
+		std::vector<std::pair<int, int> > eventId = Model->GetEventID(h);
+		for(std::vector<std::pair<int, int> >::iterator jt  = eventId.begin(); jt!= eventId.end(); jt++){
+			int marginalId = jt->second;
+			int eventid = jt->first;
+
+			boost::unordered_map<int, MarginalStatistics>::iterator it = ModelCount.find(marginalId);
+			if(it == ModelCount.end()){
+				pair<boost::unordered_map<int, MarginalStatistics>::iterator, bool> ipa = ModelCount.insert(make_pair(marginalId, MarginalStatistics(marginalId)));
+				it = ipa.first;
+				it->second.Count = count;
+			}else{
+				it->second.Count += count;
+			}
+			boost::unordered_map<int, double>::iterator iit = it->second.MarginalCount.find(eventid); 
+			if(iit == it->second.MarginalCount.end()){
+				it->second.MarginalCount.insert(make_pair(eventid, count));
+			}else{
+				iit->second += count;
+			}
+
 		}
-		boost::unordered_map<int, double>::iterator iit = it->second.MarginalCount.find(eventid); 
-		if(iit == it->second.MarginalCount.end()){
-			it->second.MarginalCount.insert(make_pair(eventid, count));
-		}else{
-			iit->second += count;
-		}
+
+		
 	}
 
 	void SRLEventModelTrainer::ModelStatistics::Normalize(){
@@ -281,16 +339,28 @@ namespace srl
 	//////////////// Model implementations //////////////
 
 	void PredicateGivenSourceWordModel::SerializeAssociated(ostream &ostr){
+		m_dict.Serialize(ostr, "DICT");
 	}
 
 	void PredicateGivenSourceWordModel::DeSerializeAssociated(ostream &ostr){
 	}
 		
-	int PredicateGivenSourceWordModel::GetEventID(const SRLHypothesis& hyp){
+	vector<PredicateGivenSourceWordModel::EventID_TYPE> PredicateGivenSourceWordModel::GetEventID(const SRLHypothesis& hyp){
+		vector<EventID_TYPE> ret;
+		const vector<string>& freshtoken = hyp.GetSourceTokenSequnceWithoutNT();
+		const vector<SRLFrame>& srlframes = hyp.GetProvidedFrames();
+
+		for(vector<string>::const_iterator it = freshtoken.begin(); it!= freshtoken.end(); it++){
+			int wid = m_dict.GetWordID_add(*it);
+			for(vector<SRLFrame>::const_iterator jt = srlframes.begin(); jt!= srlframes.end(); jt++){
+				int pid = jt->PredicateName;
+				ret.push_back(EventID_TYPE(pid, wid));// count of #(PID | WID)
+			}
+		}
+		return ret;
 	}
 
-	int PredicateGivenSourceWordModel::GetEventMarginalID(const SRLHypothesis& hyp){
-	}
+
 }
 
 
