@@ -122,9 +122,16 @@ namespace srl
 	}
 
 
-	void SRLEventModelTrainer::ModelStatistics::AddCount(const SRLHypothesis& h, double count){
+	void SRLEventModelSet::SerializeAll(ostream& ofs){
+		for(boost::unordered_map<std::string, boost::shared_ptr<SRLEventModel> >::iterator it
+			= m_srlmodels.begin(); it != m_srlmodels.end(); it++){
+				it->second->Serialize(ofs);
+		}
+	}
 
-		std::vector<std::pair<int, int> > eventId = Model->GetEventID(h);
+	void SRLEventModelTrainer::ModelStatistics::AddCount(const SRLHypothesis* h, double count){
+
+		std::vector<std::pair<int, int> > eventId = Model->GetEventID(*h);
 		for(std::vector<std::pair<int, int> >::iterator jt  = eventId.begin(); jt!= eventId.end(); jt++){
 			int marginalId = jt->second;
 			int eventid = jt->first;
@@ -166,17 +173,21 @@ namespace srl
 
 	}
 
-	void SRLEventModelTrainer::InitTraining(bool forward,SRLEventModelSet & models){
+	bool SRLEventModelTrainer::InitTraining(bool forward,boost::shared_ptr<SRLEventModelSet> models){
 		m_stats.clear();
-		for(set<string>::const_iterator it = models.GetNames().begin(); it!= models.GetNames().end(); it++){
-			boost::shared_ptr<SRLEventModel> model_ptr = models.GetModel(*it);
+		m_origin_model = models;
+		bool bHasModel = false;
+		for(set<string>::const_iterator it = models->GetNames().begin(); it!= models->GetNames().end(); it++){
+			boost::shared_ptr<SRLEventModel> model_ptr = models->GetModel(*it);
 			if(model_ptr.get() && model_ptr->IsForwardFeature() == forward ){
 				m_stats.push_back(ModelStatistics(model_ptr));
+				bHasModel = true;
 			}
 		}
+		return bHasModel;
 	}
 
-	void SRLEventModelTrainer::AddCount(const SRLHypothesis& h, double count){
+	void SRLEventModelTrainer::AddCount(const SRLHypothesis* h, double count){
 		for(vector<ModelStatistics>::iterator it = m_stats.begin(); it!= m_stats.end(); it++){
 			it->AddCount(h, count);
 		}

@@ -1,11 +1,11 @@
 /*
- *  PhraseAlignment.cpp
- *  extract
- *
- *  Created by Hieu Hoang on 28/07/2010.
- *  Copyright 2010 __MyCompanyName__. All rights reserved.
- *
- */
+*  PhraseAlignment.cpp
+*  extract
+*
+*  Created by Hieu Hoang on 28/07/2010.
+*  Copyright 2010 __MyCompanyName__. All rights reserved.
+*
+*/
 
 #include <sstream>
 #include "PhraseAlignment.h"
@@ -20,224 +20,258 @@ using namespace std;
 namespace MosesTraining
 {
 
-extern Vocabulary vcbT;
-extern Vocabulary vcbS;
+	extern Vocabulary vcbT;
+	extern Vocabulary vcbS;
 
-extern bool hierarchicalFlag;
-
-//! convert string to variable of type T. Used to reading floats, int etc from files
-template<typename T>
-inline T Scan(const std::string &input)
-{
-	std::stringstream stream(input);
-	T ret;
-	stream >> ret;
-	return ret;
-}
+	extern bool hierarchicalFlag;
 
 
-//! speeded up version of above
-template<typename T>
-inline void Scan(std::vector<T> &output, const std::vector< std::string > &input)
-{
-	output.resize(input.size());
-	for (size_t i = 0 ; i < input.size() ; i++)
+	inline bool ShouldIgnore(WORD_ID i, Vocabulary& vocab){ return i == vocab.IGNORE_ID ;};
+	inline bool IsNT(WORD_ID i,Vocabulary& vocab){ return i == vocab.NT_ID;};
+
+	//! convert string to variable of type T. Used to reading floats, int etc from files
+	template<typename T>
+	inline T Scan(const std::string &input)
 	{
-		output[i] = Scan<T>( input[i] );
+		std::stringstream stream(input);
+		T ret;
+		stream >> ret;
+		return ret;
 	}
-}
 
 
-inline void Tokenize(std::vector<std::string> &output
-                     , const std::string& str
-                     , const std::string& delimiters = " \t")
-{
-  // Skip delimiters at beginning.
-  std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);
-  // Find first "non-delimiter".
-  std::string::size_type pos     = str.find_first_of(delimiters, lastPos);
-  
-  while (std::string::npos != pos || std::string::npos != lastPos) {
-    // Found a token, add it to the vector.
-    output.push_back(str.substr(lastPos, pos - lastPos));
-    // Skip delimiters.  Note the "not_of"
-    lastPos = str.find_first_not_of(delimiters, pos);
-    // Find next "non-delimiter"
-    pos = str.find_first_of(delimiters, lastPos);
-  }
-}
+	//! speeded up version of above
+	template<typename T>
+	inline void Scan(std::vector<T> &output, const std::vector< std::string > &input)
+	{
+		output.resize(input.size());
+		for (size_t i = 0 ; i < input.size() ; i++)
+		{
+			output[i] = Scan<T>( input[i] );
+		}
+	}
 
-// speeded up version of above
-template<typename T>
-inline void Tokenize( std::vector<T> &output
-										 , const std::string &input
-										 , const std::string& delimiters = " \t")
-{
-	std::vector<std::string> stringVector;
-	Tokenize(stringVector, input, delimiters);
-	return Scan<T>(output, stringVector );
-}
 
-// read in a phrase pair and store it
-void PhraseAlignment::create( char line[], int lineID, bool includeSentenceIdFlag )
-{
-  assert(phraseS.empty());
-  assert(phraseT.empty());
+	inline void Tokenize(std::vector<std::string> &output
+		, const std::string& str
+		, const std::string& delimiters = " \t")
+	{
+		// Skip delimiters at beginning.
+		std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);
+		// Find first "non-delimiter".
+		std::string::size_type pos     = str.find_first_of(delimiters, lastPos);
 
-  vector< string > token = tokenize( line );
-  int item = 1;
-  for (size_t j=0; j<token.size(); j++) {
-    if (token[j] == "|||") item++;
-    else if (item == 1) { // source phrase
-      phraseS.push_back( vcbS.storeIfNew( token[j] ) );
-    }
+		while (std::string::npos != pos || std::string::npos != lastPos) {
+			// Found a token, add it to the vector.
+			output.push_back(str.substr(lastPos, pos - lastPos));
+			// Skip delimiters.  Note the "not_of"
+			lastPos = str.find_first_not_of(delimiters, pos);
+			// Find next "non-delimiter"
+			pos = str.find_first_of(delimiters, lastPos);
+		}
+	}
 
-    else if (item == 2) { // target phrase
-      phraseT.push_back( vcbT.storeIfNew( token[j] ) );
-    }
-    else if (item == 3) { // alignment
-      int s,t;
-      sscanf(token[j].c_str(), "%d-%d", &s, &t);
-      if ((size_t)t >= phraseT.size() || (size_t)s >= phraseS.size()) {
-        cerr << "WARNING: phrase pair " << lineID
-             << " has alignment point (" << s << ", " << t
-             << ") out of bounds (" << phraseS.size() << ", " << phraseT.size() << ")\n";
-      } else {
-        // first alignment point? -> initialize
-        createAlignVec(phraseS.size(), phraseT.size());
+	// speeded up version of above
+	template<typename T>
+	inline void Tokenize( std::vector<T> &output
+		, const std::string &input
+		, const std::string& delimiters = " \t")
+	{
+		std::vector<std::string> stringVector;
+		Tokenize(stringVector, input, delimiters);
+		return Scan<T>(output, stringVector );
+	}
 
-        // add alignment point
-        alignedToT[t].insert( s );
-        alignedToS[s].insert( t );
-      }
-    } else if (includeSentenceIdFlag && item == 4) { // optional sentence id
-      sscanf(token[j].c_str(), "%d", &sentenceId);
-    } else if (item + (includeSentenceIdFlag?-1:0) == 4) { // count
-      sscanf(token[j].c_str(), "%f", &count);
-    } else if (item + (includeSentenceIdFlag?-1:0) == 5) { // non-term lengths
-      addNTLength(token[j]);
-    } else if (item + (includeSentenceIdFlag?-1:0) == 6) { // target syntax PCFG score
-      float pcfgScore = std::atof(token[j].c_str());
-      pcfgSum = pcfgScore * count;
-    }
-  }
 
-  createAlignVec(phraseS.size(), phraseT.size());
+	inline void MapBackToStr(const vector<WORD_ID>& wid, vector<WORD>& tok, Vocabulary& vocab, vector<size_t>& NT_index){
+		tok.resize(wid.size());
+		NT_index.clear();
+		for(int i = 0; i< wid.size(); i++){
+			if(!ShouldIgnore(wid[i],vocab)){
+				tok[i] = vocab.getWord(wid[i]);
+			}
 
-  if (item + (includeSentenceIdFlag?-1:0) == 3) {
-    count = 1.0;
-  }
-  if (item < 3 || item > 6) {
-    cerr << "ERROR: faulty line " << lineID << ": " << line << endl;
-  }
-}
+			if(IsNT(wid[i],vocab)){
+				NT_index.push_back(i);
+			}
+		}
+	}
+	
+	void PhraseAlignment::GetSourceRep(vector<string>& tok, vector<size_t>& NT_index) const {
+		MapBackToStr(phraseS, tok, vcbS,NT_index);
+	}
 
-void PhraseAlignment::addNTLength(const std::string &tok)
-{
-  vector< string > tokens;
-  
-  Tokenize(tokens, tok, "=");
-  assert(tokens.size() == 2);
-  
-  size_t sourcePos = Scan<size_t>(tokens[0]);
-  assert(sourcePos < phraseS.size());
-  
-  vector< size_t > ntLengths;
-  Tokenize<size_t>(ntLengths, tokens[1], ",");
-  assert(ntLengths.size() == 2);
-  
-  m_ntLengths[sourcePos] = std::pair<size_t, size_t>(ntLengths[0], ntLengths[1]);
-}
+	void PhraseAlignment::GetTargetRep(vector<string>& tok, vector<size_t>& NT_index) const {
+		MapBackToStr(phraseT, tok, vcbT,NT_index);
+	}
+	
 
-void PhraseAlignment::createAlignVec(size_t sourceSize, size_t targetSize)
-{
-  // in case of no align info. always need align info, even if blank
-  if (alignedToT.size() == 0) {
-    size_t numTgtSymbols = (hierarchicalFlag ? targetSize-1 : targetSize);
-    alignedToT.resize(numTgtSymbols);
-  }
+	// read in a phrase pair and store it
+	void PhraseAlignment::create( char line[], int lineID, bool includeSentenceIdFlag )
+	{
+		assert(phraseS.empty());
+		assert(phraseT.empty());
 
-  if (alignedToS.size() == 0) {
-    size_t numSrcSymbols = (hierarchicalFlag ? sourceSize-1 : sourceSize);
-    alignedToS.resize(numSrcSymbols);
-  }
-}
+		vector< string > token = tokenize( line );
+		int item = 1;
 
-void PhraseAlignment::clear()
-{
-  phraseS.clear();
-  phraseT.clear();
-  alignedToT.clear();
-  alignedToS.clear();
-}
+		phraseSRLFrames = "";
+		for (size_t j=0; j<token.size(); j++) {
+			if (token[j] == "|||") item++;
+			else if (item == 1) { // source phrase
+				phraseS.push_back( vcbS.storeIfNew( token[j] ) );
+			}
 
-// check if two word alignments between a phrase pair are the same
-bool PhraseAlignment::equals( const PhraseAlignment& other )
-{
-  if (this == &other) return true;
-  if (other.GetTarget() != GetTarget()) return false;
-  if (other.GetSource() != GetSource()) return false;
-  if (other.alignedToT != alignedToT) return false;
-  if (other.alignedToS != alignedToS) return false;
-  return true;
-}
+			else if (item == 2) { // target phrase
+				phraseT.push_back( vcbT.storeIfNew( token[j] ) );
+			}
+			else if (item == 3) { // alignment
+				int s,t;
+				sscanf(token[j].c_str(), "%d-%d", &s, &t);
+				if ((size_t)t >= phraseT.size() || (size_t)s >= phraseS.size()) {
+					cerr << "WARNING: phrase pair " << lineID
+						<< " has alignment point (" << s << ", " << t
+						<< ") out of bounds (" << phraseS.size() << ", " << phraseT.size() << ")\n";
+				} else {
+					// first alignment point? -> initialize
+					createAlignVec(phraseS.size(), phraseT.size());
 
-// check if two word alignments between a phrase pairs "match"
-// i.e. they do not differ in the alignment of non-termimals
-bool PhraseAlignment::match( const PhraseAlignment& other )
-{
-  if (this == &other) return true;
-  if (other.GetTarget() != GetTarget()) return false;
-  if (other.GetSource() != GetSource()) return false;
-  if (!hierarchicalFlag) return true;
+					// add alignment point
+					alignedToT[t].insert( s );
+					alignedToS[s].insert( t );
+				}
+			} else if (includeSentenceIdFlag && item == 4) { // optional sentence id
+				sscanf(token[j].c_str(), "%d", &sentenceId);
+			} else if (item + (includeSentenceIdFlag?-1:0) == 4) { // count
+				sscanf(token[j].c_str(), "%f", &count);
+			} else if (item + (includeSentenceIdFlag?-1:0) == 5) { // non-term lengths
+				addNTLength(token[j]);
+			} else if (item + (includeSentenceIdFlag?-1:0) == 6) { // target syntax PCFG score
+				float pcfgScore = std::atof(token[j].c_str());
+				pcfgSum = pcfgScore * count;
+			} else if (item + (includeSentenceIdFlag?-1:0) == 7){
+				if(phraseSRLFrames.length())
+					phraseSRLFrames += " ";
+				phraseSRLFrames+= token[j];
+			}
+		}
 
-  assert(phraseT.size() == alignedToT.size() + 1);
-  assert(alignedToT.size() == other.alignedToT.size());
+		createAlignVec(phraseS.size(), phraseT.size());
 
-  // loop over all words (note: 0 = left hand side of rule)
-  for(size_t i=0; i<phraseT.size()-1; i++) {
-    if (isNonTerminal( vcbT.getWord( phraseT[i] ) )) {
-      if (alignedToT[i].size() != 1 ||
-          other.alignedToT[i].size() != 1 ||
-          *(alignedToT[i].begin()) != *(other.alignedToT[i].begin()))
-        return false;
-    }
-  }
-  return true;
-}
+		if (item + (includeSentenceIdFlag?-1:0) == 3) {
+			count = 1.0;
+		}
+		if (item < 3 || item > 6) {
+			cerr << "ERROR: faulty line " << lineID << ": " << line << endl;
+		}
+	}
 
-int PhraseAlignment::Compare(const PhraseAlignment &other) const
-{
-  if (this == &other) // comparing with itself
-    return 0;
+	void PhraseAlignment::addNTLength(const std::string &tok)
+	{
+		vector< string > tokens;
 
-  if (GetTarget() != other.GetTarget()) 
-    return ( GetTarget() < other.GetTarget() ) ? -1 : +1;
+		Tokenize(tokens, tok, "=");
+		assert(tokens.size() == 2);
 
-  if (GetSource() != other.GetSource())
-   return ( GetSource() < other.GetSource() ) ? -1 : +1;
+		size_t sourcePos = Scan<size_t>(tokens[0]);
+		assert(sourcePos < phraseS.size());
 
-  if (!hierarchicalFlag) 
-    return 0;
+		vector< size_t > ntLengths;
+		Tokenize<size_t>(ntLengths, tokens[1], ",");
+		assert(ntLengths.size() == 2);
 
-  // loop over all words (note: 0 = left hand side of rule)
-  for(size_t i=0; i<phraseT.size()-1; i++) {
-    if (isNonTerminal( vcbT.getWord( phraseT[i] ) )) {
-      size_t thisAlign = *(alignedToT[i].begin());
-      size_t otherAlign = *(other.alignedToT[i].begin());
+		m_ntLengths[sourcePos] = std::pair<size_t, size_t>(ntLengths[0], ntLengths[1]);
+	}
 
-      if (alignedToT[i].size() != 1 ||
-          other.alignedToT[i].size() != 1 ||
-          thisAlign != otherAlign)
-      {
-        int ret = (thisAlign < otherAlign) ? -1 : +1;
-        return ret;
-      }
-    }
-  }
-  return 0;
-  
-}
+	void PhraseAlignment::createAlignVec(size_t sourceSize, size_t targetSize)
+	{
+		// in case of no align info. always need align info, even if blank
+		if (alignedToT.size() == 0) {
+			size_t numTgtSymbols = (hierarchicalFlag ? targetSize-1 : targetSize);
+			alignedToT.resize(numTgtSymbols);
+		}
+
+		if (alignedToS.size() == 0) {
+			size_t numSrcSymbols = (hierarchicalFlag ? sourceSize-1 : sourceSize);
+			alignedToS.resize(numSrcSymbols);
+		}
+	}
+
+	void PhraseAlignment::clear()
+	{
+		phraseS.clear();
+		phraseT.clear();
+		alignedToT.clear();
+		alignedToS.clear();
+	}
+
+	// check if two word alignments between a phrase pair are the same
+	bool PhraseAlignment::equals( const PhraseAlignment& other )
+	{
+		if (this == &other) return true;
+		if (other.GetTarget() != GetTarget()) return false;
+		if (other.GetSource() != GetSource()) return false;
+		if (other.alignedToT != alignedToT) return false;
+		if (other.alignedToS != alignedToS) return false;
+		return true;
+	}
+
+	// check if two word alignments between a phrase pairs "match"
+	// i.e. they do not differ in the alignment of non-termimals
+	bool PhraseAlignment::match( const PhraseAlignment& other )
+	{
+		if (this == &other) return true;
+		if (other.GetTarget() != GetTarget()) return false;
+		if (other.GetSource() != GetSource()) return false;
+		if (!hierarchicalFlag) return true;
+
+		assert(phraseT.size() == alignedToT.size() + 1);
+		assert(alignedToT.size() == other.alignedToT.size());
+
+		// loop over all words (note: 0 = left hand side of rule)
+		for(size_t i=0; i<phraseT.size()-1; i++) {
+			if (isNonTerminal( vcbT.getWord( phraseT[i] ) )) {
+				if (alignedToT[i].size() != 1 ||
+					other.alignedToT[i].size() != 1 ||
+					*(alignedToT[i].begin()) != *(other.alignedToT[i].begin()))
+					return false;
+			}
+		}
+		return true;
+	}
+
+	int PhraseAlignment::Compare(const PhraseAlignment &other) const
+	{
+		if (this == &other) // comparing with itself
+			return 0;
+
+		if (GetTarget() != other.GetTarget()) 
+			return ( GetTarget() < other.GetTarget() ) ? -1 : +1;
+
+		if (GetSource() != other.GetSource())
+			return ( GetSource() < other.GetSource() ) ? -1 : +1;
+
+		if (!hierarchicalFlag) 
+			return 0;
+
+		// loop over all words (note: 0 = left hand side of rule)
+		for(size_t i=0; i<phraseT.size()-1; i++) {
+			if (isNonTerminal( vcbT.getWord( phraseT[i] ) )) {
+				size_t thisAlign = *(alignedToT[i].begin());
+				size_t otherAlign = *(other.alignedToT[i].begin());
+
+				if (alignedToT[i].size() != 1 ||
+					other.alignedToT[i].size() != 1 ||
+					thisAlign != otherAlign)
+				{
+					int ret = (thisAlign < otherAlign) ? -1 : +1;
+					return ret;
+				}
+			}
+		}
+		return 0;
+
+	}
 
 }
 

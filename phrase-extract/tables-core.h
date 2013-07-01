@@ -30,6 +30,15 @@ namespace MosesTraining
 		inline WORD &getWord( WORD_ID id ) {
 			return vocab[ id ];
 		}
+		// Make sure none-terminals are always added first
+		Vocabulary(){
+			IGNORE_ID = storeIfNew("[X]");
+			NT_ID = storeIfNew("[X][X]");
+		}
+
+	public:
+		WORD_ID IGNORE_ID, NT_ID;
+
 	};
 
 	typedef std::vector< WORD_ID > PHRASE;

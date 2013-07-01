@@ -12,9 +12,11 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <boost/shared_ptr.hpp>
 
 namespace MosesTraining
 {
+
 
 	// data structure for a single phrase pair
 	class PhraseAlignment
@@ -27,11 +29,14 @@ namespace MosesTraining
 
 		void createAlignVec(size_t sourceSize, size_t targetSize);
 		void addNTLength(const std::string &tok);
+
+	protected:
 	public:
 		float pcfgSum;
 		float count;
 		int sentenceId;
 		std::string domain;
+		std::string phraseSRLFrames;
 
 		std::vector< std::set<size_t> > alignedToT;
 		std::vector< std::set<size_t> > alignedToS;
@@ -57,6 +62,9 @@ namespace MosesTraining
 		const std::map<size_t, std::pair<size_t, size_t> > &GetNTLengths() const
 		{ return m_ntLengths; }
 
+		void GetSourceRep(std::vector<std::string>& tok, std::vector<size_t>& NT_index) const ;
+
+		void GetTargetRep(std::vector<std::string>& tok, std::vector<size_t>& NT_index) const ;
 	};
 
 	class PhraseAlignment;

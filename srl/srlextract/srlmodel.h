@@ -30,7 +30,7 @@ namespace srl{
 		/*! The implementation of the interface should return the token	sequence of the whole phrase/span it covers
 		NOT NOW(we always assume the tokens are mapped to some sort of ids to avoid dealing with different types.) It should
 		contain all the tokens including those provided by non-terminals*/
-		virtual const std::vector<int>& GetHypothesisTokenSequence() const= 0;
+		virtual const std::vector<std::string>& GetHypothesisTokenSequence() const= 0;
 
 		/*! It should return all the non-terminals that DIRECTLY (not nested) provided in the hypothesis, see definition of NT for
 		reference*/
@@ -38,7 +38,7 @@ namespace srl{
 
 		/*! Get all the new tokens provided directly in the hypothesis, the returned value should be an array of indices, pointing
 		to relative position in the array returned by GetHypothesisTokenSequence*/
-		virtual const std::vector<size_t>& GetTokenSequenceWithoutNT() const = 0;
+		virtual const std::vector<std::string>& GetTokenSequenceWithoutNT() const = 0;
 
 		/*! Get the SRL structures provided by **New TOKENS** */
 		virtual const std::vector<SRLFrame>& GetProvidedFrames() const = 0;
@@ -171,6 +171,8 @@ namespace srl{
 		inline const std::set<std::string> GetNames() const {return m_names;}
 		inline const std::set<boost::shared_ptr<SRLEventModel> > GetLeaves() const {return m_leaves;};
 
+		void SerializeAll(std::ostream& ofs);
+
 	public:
 
 		/// Create a modelset given string-based model definition, below is the definition of the model definition
@@ -197,19 +199,21 @@ namespace srl{
 			boost::shared_ptr<SRLEventModel> Model;
 			boost::unordered_map<int, MarginalStatistics> ModelCount;
 			ModelStatistics(boost::shared_ptr<SRLEventModel>& model): Model(model) {};			
-			void AddCount(const SRLHypothesis& h, double count);
+			void AddCount(const SRLHypothesis* h, double count);
 			// Normalize and update the model parameters. After normalizing the associated model parameter will be updated too
 			void Normalize();
 		};
 
 		std::vector<ModelStatistics> m_stats;
+
+		boost::shared_ptr<SRLEventModelSet> m_origin_model;
 	public:
 
 		// Initialize
-		void InitTraining(bool forward,SRLEventModelSet & models);
+		bool InitTraining(bool forward, boost::shared_ptr<SRLEventModelSet> models);
 
 		// Each event
-		void AddCount(const SRLHypothesis& h, double count);
+		void AddCount(const SRLHypothesis* h, double count);
 
 		// Normalize Model
 		void Normalize();
