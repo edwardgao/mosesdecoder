@@ -8,6 +8,22 @@
 #include <iostream>
 
 namespace srl{
+
+    class dict_exception : public std::exception
+    {
+        private:
+            std::string m_what;
+    
+        public:
+            dict_exception(){};
+
+            dict_exception(const char * what): m_what(what) {}
+
+            inline const char* what() const throw() {return m_what.c_str();};
+
+            virtual ~dict_exception() throw() {}
+    };
+
 	class HDICT{
 	protected:
 		boost::unordered_map<std::string, int> m_word_id;
@@ -26,7 +42,7 @@ namespace srl{
 				if(LockedVocab())
 					return UNK;
 				else{
-					throw std::exception("Trying to add new word while being constant");
+					throw dict_exception("Trying to add new word while being constant");
 				}
 			}else{
 				return it->second;

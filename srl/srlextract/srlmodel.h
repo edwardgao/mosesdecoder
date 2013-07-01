@@ -12,6 +12,22 @@
 
 namespace srl{
 
+    class srl_model_exception : public std::exception
+    {   
+        private:
+            std::string m_what;
+           
+            
+        public:
+            srl_model_exception(){};
+            
+            srl_model_exception(const char * what): m_what(what) {}
+            
+            inline const char* what() const throw() {return m_what.c_str();};
+            
+            virtual ~srl_model_exception() throw() {}
+    };
+
 	/*! This interface is a contract between SRL event extractor and decoder/nbest hypothesis
 	the decoder/nbest rescorer should subclass it and provide necessary information for SRL event
 	classifier.	*/

@@ -41,7 +41,7 @@ namespace srl
 			score = numeric_limits<double>::max();
 			break;
 		default:
-			throw exception("Unknow combine type");
+			throw srl_model_exception("Unknow combine type");
 			break;
 		}
 
@@ -76,7 +76,7 @@ namespace srl
 				score = min(score, tempscore);
 				break;
 			default:
-				throw exception("Unknow combine type");
+				throw srl_model_exception("Unknow combine type");
 				break;
 			}
 			if(score < c_flooredScore)
@@ -268,8 +268,9 @@ namespace srl
 			it!=string_split_iterator();	++it)
 		{
 			string imodel = "";
+            string temp = boost::copy_range<string>(*it);
 			for(string_split_iterator jt=
-				boost::make_split_iterator(boost::copy_range<string>(*it), boost::first_finder("-->", boost::is_iequal()));
+				boost::make_split_iterator(temp, boost::first_finder("-->", boost::is_iequal()));
 				it!=string_split_iterator();	++jt)
 			{
 				if(imodel.length() == 0){
