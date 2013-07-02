@@ -27,7 +27,7 @@ namespace srl{
 			if (extractFileP.eof())	break;
 			// create new phrase pair
 			PhraseAlignment phrasePair;
-			phrasePair.create( line, i, true);
+			phrasePair.create( line, i, false, true);
 			phraseframes->clear();
 			StringToFrame(phrasePair.phraseSRLFrames, *phraseframes);
 

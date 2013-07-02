@@ -179,7 +179,7 @@ namespace srl
 		bool bHasModel = false;
 		for(set<string>::const_iterator it = models->GetNames().begin(); it!= models->GetNames().end(); it++){
 			boost::shared_ptr<SRLEventModel> model_ptr = models->GetModel(*it);
-			if(model_ptr.get() && model_ptr->IsForwardFeature() == forward ){
+			if(model_ptr.get() && (forward == model_ptr->IsForwardFeature()) ){
 				m_stats.push_back(ModelStatistics(model_ptr));
 				bHasModel = true;
 			}
@@ -254,15 +254,10 @@ namespace srl
 	boost::shared_ptr<SRLEventModelSet> SRLEventModelSet::Construct(std::string strModelDef){
 		boost::shared_ptr<SRLEventModelSet> modelset(new SRLEventModelSet());
 		typedef boost::split_iterator<string::iterator> string_split_iterator;
-		vector<string> modeldefs;
-		vector<string> modeldeps;
 		vector<string> modelparts;
 
 		map<string, string> modelnames;
 
-		if(!modeldefs.size()){
-			throw invalid_argument("Invalid model parameter for SRL modelset");
-		}
 		for(string_split_iterator it=
 			boost::make_split_iterator(strModelDef, boost::first_finder("|||", boost::is_iequal()));
 			it!=string_split_iterator();	++it)
@@ -271,7 +266,7 @@ namespace srl
             string temp = boost::copy_range<string>(*it);
 			for(string_split_iterator jt=
 				boost::make_split_iterator(temp, boost::first_finder("-->", boost::is_iequal()));
-				it!=string_split_iterator();	++jt)
+				jt!=string_split_iterator();	++jt)
 			{
 				if(imodel.length() == 0){
 					imodel = boost::trim_copy(boost::copy_range<string>(*jt));
@@ -279,9 +274,9 @@ namespace srl
 				}
 				string nmodel = boost::trim_copy(boost::copy_range<string>(*jt));
 
-				map<string, string>::iterator it = modelnames.find(imodel);
-				if(it!=modelnames.end()){
-					if(it->second == nmodel)
+				map<string, string>::iterator kt = modelnames.find(imodel);
+				if(kt!=modelnames.end()){
+					if(kt->second == nmodel)
 						continue;
 					else
 					{
@@ -305,17 +300,16 @@ namespace srl
 
 		map<string, boost::shared_ptr<SRLEventModel> > models;
 		// Create all
+		boost::shared_ptr<SRLEventModel> model;
 		for(map<string, string>::iterator it = modelnames.begin() ; it!=modelnames.end() ;it++){
 			// params
-			boost::split(modelparts, it->first, boost::is_any_of(" \t"), boost::algorithm::token_compress_on);
-			boost::shared_ptr<SRLEventModel> model;
-			if(modeldefs.size() == 0){
-				// Creat
-			}
-			models[it->first] = model;
-			//boost::shared_ptr<SRLEventModel> model(new SRLEventModel());
+			boost::split(modelparts, it->first, boost::is_any_of(" \t"), boost::algorithm::token_compress_on);			
+			if(it->first == "PredicateGivenSourceWord")  // Create models
+				model.reset(new PredicateGivenSourceWordModel(false));
+			models[it->first] = model;			
 		}
 		//(Link)
+		set<string> non_leaf;
 		for(map<string, string>::iterator it = modelnames.begin() ; it!=modelnames.end() ;it++){
 			if(it->second.length() > 0){
 				map<string, boost::shared_ptr<SRLEventModel> >::iterator jt = models.find(it->second);
@@ -327,11 +321,14 @@ namespace srl
 				map<string, boost::shared_ptr<SRLEventModel> >::iterator kt = models.find(it->first);
 				assert(kt != models.end());
 				kt->second->SetBackoffEvent(jt->second);
+				non_leaf.insert(jt->first);
 			}
 		}
 
-		for(map<string, boost::shared_ptr<SRLEventModel> >::iterator kt; kt!= models.end(); kt++){
-			modelset->SetModel(kt->second, kt->second.get() ? false : true);			
+		for(map<string, boost::shared_ptr<SRLEventModel> >::iterator kt = models.begin(); kt!= models.end(); kt++){
+
+			bool is_leaf = (non_leaf.find(kt->first) == non_leaf.end());
+			modelset->SetModel(kt->second, is_leaf);	
 		}
 
 		return modelset;

@@ -28,6 +28,9 @@ int main(int argc, const char** argv){
 
 	if (help) {
 		PRINT_HELP;
+		// Models
+		cerr << "Avaialbe models:" << endl;
+		cerr << "PredicateGivenSourceWord  : Probability of outputting a predicate given a source word";
 		exit(1);
 	}
 

@@ -41,7 +41,7 @@ namespace MosesTraining
 		std::vector< std::set<size_t> > alignedToT;
 		std::vector< std::set<size_t> > alignedToS;
 
-		void create( char*, int, bool );
+		void create( char*, int, bool, bool addSRL = false );
 		void clear();
 		bool equals( const PhraseAlignment& );
 		bool match( const PhraseAlignment& );

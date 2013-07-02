@@ -171,7 +171,7 @@ namespace srl{
 	std::string FramesToString(const TProvidedFramesForPhrases& srls);
 
 	/// Convert SRL string representation to SRL frame
-	void StringToFrame(const std::string, TProvidedFramesForPhrases& srls);
+	void StringToFrame(const std::string& , TProvidedFramesForPhrases& srls);
 
 
 }

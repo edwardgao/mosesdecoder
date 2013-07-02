@@ -319,8 +319,11 @@ namespace srl {
 		return ret.str();
 	}
 
-	void StringToFrame(const std::string str, TProvidedFramesForPhrases& srls){
-		list<string> tokens;
+	void StringToFrame(const std::string& str, TProvidedFramesForPhrases& srls){
+		list<string> tokens;		
+		if(str.length()==0){
+			return;
+		}
 		boost::split(tokens, str, boost::is_any_of(" "), boost::algorithm::token_compress_on);
 		int status = 0;
 		for(list<string>::iterator it = tokens.begin(); it!= tokens.end(); it++){

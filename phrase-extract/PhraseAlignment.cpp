@@ -107,7 +107,7 @@ namespace MosesTraining
 	
 
 	// read in a phrase pair and store it
-	void PhraseAlignment::create( char line[], int lineID, bool includeSentenceIdFlag )
+	void PhraseAlignment::create( char line[], int lineID, bool includeSentenceIdFlag , bool addSRL )
 	{
 		assert(phraseS.empty());
 		assert(phraseT.empty());
@@ -146,10 +146,10 @@ namespace MosesTraining
 				sscanf(token[j].c_str(), "%f", &count);
 			} else if (item + (includeSentenceIdFlag?-1:0) == 5) { // non-term lengths
 				addNTLength(token[j]);
-			} else if (item + (includeSentenceIdFlag?-1:0) == 6) { // target syntax PCFG score
+			} else if (item + (includeSentenceIdFlag?-1:0) == 6 && ! addSRL) { // target syntax PCFG score
 				float pcfgScore = std::atof(token[j].c_str());
 				pcfgSum = pcfgScore * count;
-			} else if (item + (includeSentenceIdFlag?-1:0) == 7){
+			} else if (item + (includeSentenceIdFlag?-1:0) == 6 && addSRL){
 				if(phraseSRLFrames.length())
 					phraseSRLFrames += " ";
 				phraseSRLFrames+= token[j];

@@ -184,7 +184,7 @@ namespace srl{
 		/// Add, release the old model if there is
 		boost::shared_ptr<SRLEventModel> SetModel(boost::shared_ptr<SRLEventModel> em, bool isLeaf);
 
-		inline const std::set<std::string> GetNames() const {return m_names;}
+		inline const std::set<std::string>& GetNames() const {return m_names;}
 		inline const std::set<boost::shared_ptr<SRLEventModel> > GetLeaves() const {return m_leaves;};
 
 		void SerializeAll(std::ostream& ofs);
@@ -262,7 +262,7 @@ namespace srl{
 		virtual std::vector<EventID_TYPE> GetEventID(const SRLHypothesis& hyp); // Get distinguishable Event ID, this is used to collect statistics
 
 
-		PredicateGivenSourceWordModel(bool bLockVocab): m_dict(bLockVocab)  {ScoreCombineType = COMBINE_MEAN; c_flooredScore = 1e-10;}
+		PredicateGivenSourceWordModel(bool bLockVocab): m_dict(bLockVocab)  {ScoreCombineType = COMBINE_MEAN; m_forward_feature = true; c_flooredScore = 1e-10; m_eventName = "PredicateGivenSourceWord";}
 
 		virtual ~PredicateGivenSourceWordModel() {}
 	};

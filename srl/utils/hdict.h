@@ -72,7 +72,7 @@ namespace srl{
 		void Serialize(std::ostream& ostr, const char* header){
 			ostr << "@@@@BEGIN:" << header << std::endl;
 			for(int i = 0; i< m_words.size(); i++){
-				ostr << i << " " << (m_words[i] ? "UN+USED+WORD+VERY+BAD" : m_words[i]->c_str()) << std::endl;
+				ostr << i << " " << (m_words[i] ?m_words[i]->c_str() : "UN+USED+WORD+VERY+BAD" ) << std::endl;
 			}
 			ostr << "@@@@END:"<<std::endl;
 		}
