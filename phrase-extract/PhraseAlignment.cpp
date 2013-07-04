@@ -117,6 +117,8 @@ namespace MosesTraining
 
 		phraseSRLFrames = "";
 		for (size_t j=0; j<token.size(); j++) {
+			if (token[j] == "[X]")
+				continue;
 			if (token[j] == "|||") item++;
 			else if (item == 1) { // source phrase
 				phraseS.push_back( vcbS.storeIfNew( token[j] ) );

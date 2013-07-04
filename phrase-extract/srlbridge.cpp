@@ -44,7 +44,7 @@ namespace srl{
 		set<int> ntpos;
 
 		for(int j = 0; j< nts.size(); j++){
-			ntpos.insert(j);
+			ntpos.insert(nts[j]);
 			nnt.start = nnt.end = j;
 			nnt.Expanded = false;
 			nnt.NTTag = 0; // Defautl
