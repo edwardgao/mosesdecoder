@@ -206,7 +206,8 @@ TARGET_LINK_LIBRARIES (
     )
 
 
-INSTALL(TARGETS phex consolidate-direct consolidate-reverse extract extract-rules extract-lex consolidate statistics score
+INSTALL(TARGETS phex consolidate-direct consolidate-reverse extract
+    extract-rules extract-lex consolidate statistics score srl-model-estimate
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
