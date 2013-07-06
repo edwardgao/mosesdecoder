@@ -114,19 +114,21 @@ namespace MosesTraining
 
 		vector< string > token = tokenize( line );
 		int item = 1;
-
+		bool inSRL = false;
 		phraseSRLFrames = "";
 		for (size_t j=0; j<token.size(); j++) {
 			if (token[j] == "[X]")
 				continue;
-			if (token[j] == "|||") item++;
+			if (token[j] == "|||") {item++ ; inSRL = false;}
 			else if (item == 1) { // source phrase
 				phraseS.push_back( vcbS.storeIfNew( token[j] ) );
-			}
-
+			}			
 			else if (item == 2) { // target phrase
 				phraseT.push_back( vcbT.storeIfNew( token[j] ) );
 			}
+
+			if (token[j] == "@S@") {inSRL  = true ; continue;}
+			
 			else if (item == 3) { // alignment
 				int s,t;
 				sscanf(token[j].c_str(), "%d-%d", &s, &t);
@@ -142,6 +144,10 @@ namespace MosesTraining
 					alignedToT[t].insert( s );
 					alignedToS[s].insert( t );
 				}
+			} else if (inSRL || (item + (includeSentenceIdFlag?-1:0) == 6 && addSRL)){
+				if(phraseSRLFrames.length())
+					phraseSRLFrames += " ";
+				phraseSRLFrames+= token[j];
 			} else if (includeSentenceIdFlag && item == 4) { // optional sentence id
 				sscanf(token[j].c_str(), "%d", &sentenceId);
 			} else if (item + (includeSentenceIdFlag?-1:0) == 4) { // count
@@ -151,10 +157,6 @@ namespace MosesTraining
 			} else if (item + (includeSentenceIdFlag?-1:0) == 6 && ! addSRL) { // target syntax PCFG score
 				float pcfgScore = std::atof(token[j].c_str());
 				pcfgSum = pcfgScore * count;
-			} else if (item + (includeSentenceIdFlag?-1:0) == 6 && addSRL){
-				if(phraseSRLFrames.length())
-					phraseSRLFrames += " ";
-				phraseSRLFrames+= token[j];
 			}
 		}
 
