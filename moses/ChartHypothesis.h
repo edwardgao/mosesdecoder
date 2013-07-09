@@ -114,17 +114,17 @@ public:
   }
   
   //! the feature function states for a particular feature \param featureID
-	inline const FFState* GetFFState( size_t featureID ) const {
-		return m_ffStates[ featureID ];
-	}
+  inline const FFState* GetFFState( size_t featureID ) const {
+    return m_ffStates[ featureID ];    
+  }
   
   //! reference back to the manager
-	inline const ChartManager& GetManager() const { return m_manager; }
+  inline const ChartManager& GetManager() const { return m_manager; }
 
   void CreateOutputPhrase(Phrase &outPhrase) const;
   Phrase GetOutputPhrase() const;
-
-	int RecombineCompare(const ChartHypothesis &compare) const;
+  
+  int RecombineCompare(const ChartHypothesis &compare) const;
 
   void CalcScore();
 
@@ -145,9 +145,9 @@ public:
   { return m_prevHypos; }
 
   //! get a particular previous hypos
-	const ChartHypothesis* GetPrevHypo(size_t pos) const {
-		return m_prevHypos[pos];
-	}
+  const ChartHypothesis* GetPrevHypo(size_t pos) const {
+    return m_prevHypos[pos];
+  }
   
   //! get the constituency label that covers this hypo
   const Word &GetTargetLHS() const {
@@ -155,7 +155,7 @@ public:
   }
 
   //! get the best hypo in the arc list when doing n-best list creation. It's either this hypothesis, or the best hypo is this hypo is in the arc list
-	const ChartHypothesis* GetWinningHypothesis() const 
+  const ChartHypothesis* GetWinningHypothesis() const 
   {	return m_winningHypo;	}
 
   TO_STRING();
